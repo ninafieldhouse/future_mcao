@@ -1,0 +1,155 @@
+---
+query: can you make a flochart of this code?
+references:
+  - "File: /scripts/CAO_index_statistics_clean_1member.py"
+generationTime: 2025-05-22T08:57:40.331Z
+---
+flowchart TD
+    %% Main entry
+    START([Start: CAO Index Statistics Script]):::start
+    LOAD_DATA{{"Load Data for Regions & Timeframes"}}:::decision
+    subgraph REGIONS [Regions: JS & NA]
+        direction TB
+        JS[JS Region]:::region
+        NA[NA Region]:::region
+    end
+
+    subgraph TIMEFRAMES [Timeframes: Present & Future]
+        direction TB
+        PRESENT[Present]:::timeframe
+        FUTURE[Future]:::timeframe
+    end
+
+    %% Data Reading
+    READ_MASKED(read_masked_CAOI_data):::process
+    READ(read_data):::process
+    WRITE(write_data):::process
+
+    %% Preprocessing
+    DJF_MASK(djf_mask):::process
+    CALC_SPACE_MEAN(calculate_space_mean):::process
+    CALC_TIME_MEAN(calculate_time_mean):::process
+    CALC_QUANTILES(calculate_quantiles):::process
+    PERCENTILE_MASK(percentile_mask_time):::process
+    EVENT_MASK(event_mask_time):::process
+
+    %% Analysis
+    HISTOGRAM(plot_histogram):::plot
+    BOXPLOT(plot_boxplot):::plot
+    MAP_DJF(plot_map_djf):::plot
+    MAP_10TH(plot_map_10th):::plot
+    MAP_FREQ(plot_map_frequency):::plot
+    MAP_FREQ_10TH(plot_map_frequency_10th):::plot
+    MAP_FLUXES(plot_map_fluxes_10th):::plot
+    CONTRIB_BAR(plot_caoi_contribution_bar):::plot
+    CONTRIB_BOX(plot_caoi_contribution):::plot
+    CONTRIB_SCATTER(plot_caoi_contribution_scatter):::plot
+    HIST_EVENT(plot_histogram_event):::plot
+    EOF_ANALYSIS(perform_eof_analysis):::process
+    EOF_PLOT(plot_eof_results):::plot
+
+    %% Data dictionaries
+    DATA_DICT[data_dict]:::data
+    CAOI_DICT[CAOI_djf_data_dict]:::data
+    QUANTILES_DICT[quantiles_dict]:::data
+    EVENT_MASK_DICT[event_mask_dict]:::data
+    PERCENTILE_MASK_DICT[percentile_mask_dict]:::data
+
+    %% Flow
+    START --> LOAD_DATA
+    LOAD_DATA --> REGIONS
+    REGIONS --> JS
+    REGIONS --> NA
+    JS --> TIMEFRAMES
+    NA --> TIMEFRAMES
+    TIMEFRAMES --> PRESENT
+    TIMEFRAMES --> FUTURE
+
+    %% Data reading and writing
+    PRESENT -->|Read/Write| READ_MASKED
+    FUTURE -->|Read/Write| READ_MASKED
+    PRESENT -->|Read/Write| READ
+    FUTURE -->|Read/Write| READ
+    PRESENT -->|Write| WRITE
+    FUTURE -->|Write| WRITE
+
+    %% Preprocessing
+    READ_MASKED --> DJF_MASK
+    READ --> DJF_MASK
+    DJF_MASK --> CALC_SPACE_MEAN
+    DJF_MASK --> CALC_TIME_MEAN
+    CALC_SPACE_MEAN --> CALC_QUANTILES
+    CALC_QUANTILES --> PERCENTILE_MASK
+    CALC_QUANTILES --> EVENT_MASK
+
+    %% Data dictionaries
+    CALC_QUANTILES --> QUANTILES_DICT
+    DJF_MASK --> CAOI_DICT
+    READ --> DATA_DICT
+    EVENT_MASK --> EVENT_MASK_DICT
+    PERCENTILE_MASK --> PERCENTILE_MASK_DICT
+
+    %% Analysis and plotting
+    QUANTILES_DICT --> HISTOGRAM
+    CAOI_DICT --> HISTOGRAM
+    CAOI_DICT --> BOXPLOT
+    CAOI_DICT --> MAP_DJF
+    CAOI_DICT --> MAP_10TH
+    CAOI_DICT --> MAP_FREQ
+    CAOI_DICT --> MAP_FREQ_10TH
+    DATA_DICT --> MAP_FLUXES
+    DATA_DICT --> CONTRIB_BAR
+    DATA_DICT --> CONTRIB_BOX
+    DATA_DICT --> CONTRIB_SCATTER
+    CAOI_DICT --> HIST_EVENT
+    DATA_DICT --> EOF_ANALYSIS
+    EOF_ANALYSIS --> EOF_PLOT
+
+    %% Subgraphs for plotting
+    subgraph PLOTS [Plotting Functions]
+        HISTOGRAM
+        BOXPLOT
+        MAP_DJF
+        MAP_10TH
+        MAP_FREQ
+        MAP_FREQ_10TH
+        MAP_FLUXES
+        CONTRIB_BAR
+        CONTRIB_BOX
+        CONTRIB_SCATTER
+        HIST_EVENT
+        EOF_PLOT
+    end
+
+    %% Styling
+    classDef start fill:#e0ffe0,stroke:#333,stroke-width:2px;
+    classDef process fill:#e6f7ff,stroke:#333,stroke-width:2px;
+    classDef plot fill:#fffbe6,stroke:#333,stroke-width:2px;
+    classDef data fill:#f0e6ff,stroke:#333,stroke-width:2px;
+    classDef region fill:#d9eaff,stroke:#333,stroke-width:2px;
+    classDef timeframe fill:#ffe6e6,stroke:#333,stroke-width:2px;
+    classDef decision fill:#ffe0b3,stroke:#333,stroke-width:2px;
+
+    %% Tooltips
+    click READ_MASKED "Reads CAOI data masked by sea-ice, land, box" "Read masked CAOI"
+    click READ "Reads netCDF data masked by sea-ice, land" "Read data"
+    click WRITE "Writes DJF netCDF data" "Write data"
+    click DJF_MASK "Creates DJF mask for 10 seasons" "DJF mask"
+    click CALC_SPACE_MEAN "Calculates spatial mean with weights" "Space mean"
+    click CALC_TIME_MEAN "Calculates time mean with weights" "Time mean"
+    click CALC_QUANTILES "Calculates 10th percentile of anomalies" "Quantiles"
+    click PERCENTILE_MASK "Creates mask for 10th percentile events" "Percentile mask"
+    click EVENT_MASK "Creates mask for summary events" "Event mask"
+    click HISTOGRAM "Plots histogram of CAOI" "Histogram"
+    click BOXPLOT "Plots boxplot of CAOI" "Boxplot"
+    click MAP_DJF "Plots DJF mean CAOI maps" "Map DJF"
+    click MAP_10TH "Plots 10th percentile CAOI maps" "Map 10th"
+    click MAP_FREQ "Plots frequency maps for CAOI > 8K" "Map frequency"
+    click MAP_FREQ_10TH "Plots frequency maps for 10th percentile" "Map frequency 10th"
+    click MAP_FLUXES "Plots surface fluxes" "Map fluxes"
+    click CONTRIB_BAR "Plots CAOI contribution bar" "Contribution bar"
+    click CONTRIB_BOX "Plots CAOI contribution boxplot" "Contribution box"
+    click CONTRIB_SCATTER "Plots CAOI contribution scatter" "Contribution scatter"
+    click HIST_EVENT "Plots histogram of event durations" "Event histogram"
+    click EOF_ANALYSIS "Performs EOF analysis" "EOF analysis"
+    click EOF_PLOT "Plots EOF results" "EOF plot"
