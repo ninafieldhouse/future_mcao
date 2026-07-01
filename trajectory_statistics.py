@@ -1,8 +1,10 @@
 # %%
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import csv
+import os
 from scipy.stats import ttest_ind
 from scipy.stats import mannwhitneyu
 import cartopy.crs as ccrs
@@ -454,13 +456,24 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
     3. Vertical boxplot for warming rates
     """
 
+    arial_user_font = '/home/nfieldhouse/.local/share/fonts/truetype/arial/arial.ttf'
+    if os.path.exists(arial_user_font):
+        try:
+            matplotlib.font_manager.fontManager.addfont(arial_user_font)
+        except Exception:
+            pass
+    available_fonts = {f.name for f in matplotlib.font_manager.fontManager.ttflist}
+    preferred_font = 'Arial' if 'Arial' in available_fonts else 'Liberation Sans'
+
     plt.rcParams.update({
     'font.size': 6,           # Default font size for ticks
     'axes.titlesize': 6,      # Title font size
     'axes.labelsize': 6,      # X and Y label font size
     'legend.fontsize': 6,     # Legend font size
     'xtick.labelsize': 4,     # X-axis tick font size
-    'ytick.labelsize': 4      # Y-axis tick font size
+    'ytick.labelsize': 4,     # Y-axis tick font size
+    'font.family': 'sans-serif',
+    'font.sans-serif': [preferred_font, 'Arial', 'Liberation Sans', 'DejaVu Sans']
 })
     # Load data
     path_present = f"{datapath}TH_summary_{region}_present.csv"
@@ -512,7 +525,7 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
     # First subplot: Evolution plot
     ax1 = axes[0]
     for timeframe, (rel_times, means, q25s, q75s) in stats_dict.items():
-        ax1.plot(rel_times, means, label=f'mean {varname} ({timeframe})' if varname != 'TH' else f'mean $\\Theta$ ({timeframe})', color=colors[timeframe], linewidth=0.8)
+        ax1.plot(rel_times, means, label=f'mean {varname} ({timeframe})' if varname != 'TH' else f'mean Θ ({timeframe})', color=colors[timeframe], linewidth=0.8)
         ax1.fill_between(rel_times, q25s, q75s, alpha=0.2, color=colors[timeframe], label=f'IQR ({timeframe})')
         # Always use TH to find the minimum time, regardless of varname
         if varname != 'TH':
@@ -527,12 +540,12 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
             min_th_time = rel_times[min_th_idx]
         ax1.axvline(x=min_th_time, color=colors[timeframe], linestyle='--', alpha=0.7, linewidth=0.8)
     
-    ax1.set_xlabel('days relative to t$_{MCAO}$')
+    ax1.set_xlabel(r'days relative to t$_{\mathrm{MCAO}}$')
     if varname == 'Q':
         ax1.set_ylabel(f'q [g kg$^{{-1}}$]')
         ax1.set_ylim(0, 5)
     elif varname == 'TH':
-        ax1.set_ylabel(f'$\\Theta$ [K]')
+        ax1.set_ylabel('Θ [K]')
         ax1.set_ylim(250, 300)
     else:
         ax1.set_ylabel(f'{varname} [{units_dict[varname]}]')
@@ -542,7 +555,7 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
     ax1.set_xticklabels([str(int(x//24)) for x in np.arange(-168, 1, 24)])
     ax1.set_xticks(np.arange(-168, 1, 6), minor=True)
     ax1.grid(True, alpha=0.3)
-    ax1.legend()
+    legend = ax1.legend()
     # ax1.set_title(f'a) {region} - {airstream}', loc='left')
     
     # Second subplot: Cooling rates boxplot
@@ -550,7 +563,7 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
     if varname == 'TH':
         cooling_rate_present = df_air_present['cooling_rate_6h'].dropna()
         cooling_rate_future = df_air_future['cooling_rate_6h'].dropna()
-        rate_label = '$\\Theta$ rate [K 6h$^{-1}$]'
+        rate_label = 'Θ rate [K 6h$^{-1}$]'
     elif varname == 'Q':
         cooling_rate_present = df_air_present['q_rate_6h_cooling'].dropna()
         cooling_rate_future = df_air_future['q_rate_6h_cooling'].dropna()
@@ -627,6 +640,34 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
     ax5.set_xticklabels([f'present\n {data_warming[0].mean():.2f}', f'future{asterisk_warming}\n {data_warming[1].mean():.2f}'], fontsize=6)
     ax5.grid(True, axis='y', alpha=0.3)
     # ax5.set_title('c) warming phase', loc='left')
+
+    # Force font on text artists in this figure.
+    for ax in (ax1, ax2, ax5):
+        ax.xaxis.label.set_fontname(preferred_font)
+        ax.yaxis.label.set_fontname(preferred_font)
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            label.set_fontname(preferred_font)
+    if legend is not None:
+        for text in legend.get_texts():
+            text.set_fontname(preferred_font)
+
+    # Debug: print actual resolved font files used by representative text artists.
+    y1_props = ax1.yaxis.label.get_fontproperties()
+    y2_props = ax2.yaxis.label.get_fontproperties()
+    print(f"[FONT DEBUG] preferred_font={preferred_font}")
+    print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
+    print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
+    print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
+    print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
+    ticklabels = ax1.get_xticklabels()
+    if ticklabels:
+        tick_props = ticklabels[0].get_fontproperties()
+        print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
+        print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
+    if legend is not None and legend.get_texts():
+        leg_props = legend.get_texts()[0].get_fontproperties()
+        print(f"[FONT DEBUG] legend[0] family={leg_props.get_family()} name={leg_props.get_name()}")
+        print(f"[FONT DEBUG] legend[0] file={matplotlib.font_manager.findfont(leg_props, fallback_to_default=True)}")
 
     plt.tight_layout()
     plt.savefig(f"{figpath}combined_evolution_rates_{varname}_{airstream}_{region}_coolingwarming.png", dpi=300, bbox_inches='tight')
