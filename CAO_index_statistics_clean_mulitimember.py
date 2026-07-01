@@ -3381,6 +3381,8 @@ data_dict = {
     # add other regions/timeframes as needed
 }
 
+#%%
+
 data_dict_precip = {
     "NA_present": read_ensemble_data_precip("NA", "present", member_ids),
     "NA_future": read_ensemble_data_precip("NA", "future", member_ids),
@@ -4354,6 +4356,17 @@ def compute_significance_ttest(present_data, future_data, alpha=0.05):
         return False, np.nan, np.nan
     
 def plot_caoi_contribution_combined_with_significance(region):
+    # Enforce a concrete sans-serif font for this figure only.
+    # In interactive sessions, Matplotlib may keep a stale font cache, so add Arial explicitly if available.
+    arial_user_font = os.path.expanduser("~/.local/share/fonts/truetype/arial/arial.ttf")
+    if os.path.exists(arial_user_font):
+        try:
+            matplotlib.font_manager.fontManager.addfont(arial_user_font)
+        except Exception:
+            pass
+    available_fonts = {f.name for f in matplotlib.font_manager.fontManager.ttflist}
+    preferred_font = "Arial" if "Arial" in available_fonts else "Liberation Sans"
+
     if region == "JS":
         ylims_temp = (245, 305)
         ylims_caoi = (-5, 25)
@@ -4451,128 +4464,161 @@ def plot_caoi_contribution_combined_with_significance(region):
     asterisk_CAOI = "*" if is_sig_CAOI else ""
 
     # --- Plot both boxplots in the same figure ---
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 9), gridspec_kw={'width_ratios': [2, 1]})
+    with plt.rc_context({
+        "font.family": "sans-serif",
+        "font.sans-serif": [preferred_font, "Arial", "Liberation Sans", "DejaVu Sans"],
+    }):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 9), gridspec_kw={'width_ratios': [2, 1]})
 
-    # SSTH & TH850 - Plot DJF first (background with alpha=0.2)
-    bp_temp_djf = ax1.boxplot(
-        djf_data_temp,
-        positions=[0, 1, 2, 3],
-        patch_artist=True,
-        showfliers=False,
-        widths=0.6,
-        showmeans=True,
-        meanline=True,
-        meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
-        medianprops={'linewidth': 1.5, 'alpha': 0.2},
-    )
-    colors_temp_djf = ["lightblue", "orange", "lightblue", "orange"]
-    for patch, color in zip(bp_temp_djf["boxes"], colors_temp_djf):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.2)
-    
-    # Set line properties for DJF boxplot to be less prominent
-    for element in ['whiskers', 'fliers', 'medians', 'caps']:
-        for line in bp_temp_djf[element]:
-            line.set_alpha(0.2)
-    
-    # SSTH & TH850 - Plot events on top (foreground)
-    bp_temp_event = ax1.boxplot(
-        event_data_temp,
-        positions=[0, 1, 2, 3],
-        patch_artist=True,
-        showfliers=False,
-        widths=0.6,
-        showmeans=True,
-        meanline=True,
-        meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
-        medianprops={'linewidth': 1.5},
-    )
-    colors_temp_event = ["blue", "orange", "blue", "orange"]
-    for patch, color in zip(bp_temp_event["boxes"], colors_temp_event):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.7)
+        # SSTH & TH850 - Plot DJF first (background with alpha=0.2)
+        bp_temp_djf = ax1.boxplot(
+            djf_data_temp,
+            positions=[0, 1, 2, 3],
+            patch_artist=True,
+            showfliers=False,
+            widths=0.6,
+            showmeans=True,
+            meanline=True,
+            meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
+            medianprops={'linewidth': 1.5, 'alpha': 0.2},
+        )
+        colors_temp_djf = ["lightblue", "orange", "lightblue", "orange"]
+        for patch, color in zip(bp_temp_djf["boxes"], colors_temp_djf):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.2)
+        
+        # Set line properties for DJF boxplot to be less prominent
+        for element in ['whiskers', 'fliers', 'medians', 'caps']:
+            for line in bp_temp_djf[element]:
+                line.set_alpha(0.2)
+        
+        # SSTH & TH850 - Plot events on top (foreground)
+        bp_temp_event = ax1.boxplot(
+            event_data_temp,
+            positions=[0, 1, 2, 3],
+            patch_artist=True,
+            showfliers=False,
+            widths=0.6,
+            showmeans=True,
+            meanline=True,
+            meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
+            medianprops={'linewidth': 1.5},
+        )
+        colors_temp_event = ["blue", "orange", "blue", "orange"]
+        for patch, color in zip(bp_temp_event["boxes"], colors_temp_event):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
 
-    ax1.set_ylabel(r"$\Theta$ [K]", fontsize=20)
-    # ax1.set_ylim(ylims_temp)
-    ax1.tick_params(axis="both", labelsize=16)
-    ax1.grid(axis="y", linestyle="--", alpha=0.5)
-    ax1.set_xticks([0.5, 2.5])
-    
-    # Update labels to include asterisks for significant differences
-    xticklabels = [
-        f"SST\nΔ={mean_diff_SSTH:.2f}K{asterisk_SSTH}",
-        f"850\nΔ={mean_diff_TH850:.2f}K{asterisk_TH850}"
-    ]
-    ax1.set_xticklabels(xticklabels, fontsize=20)
-    print(ax1.get_ylim())
+        ax1.set_ylabel("Θ [K]", fontsize=20, fontname=preferred_font)
+        # ax1.set_ylim(ylims_temp)
+        ax1.tick_params(axis="both", labelsize=16)
+        ax1.grid(axis="y", linestyle="--", alpha=0.5)
+        ax1.set_xticks([0.5, 2.5])
+        
+        # Update labels to include asterisks for significant differences
+        xticklabels = [
+            f"SST\nΔ={mean_diff_SSTH:.2f}K{asterisk_SSTH}",
+            f"850\nΔ={mean_diff_TH850:.2f}K{asterisk_TH850}"
+        ]
+        ax1.set_xticklabels(xticklabels, fontsize=20, fontname=preferred_font)
+        print(ax1.get_ylim())
 
-    # CAOI - Plot DJF first (background with alpha=0.2)
-    bp_caoi_djf = ax2.boxplot(
-        djf_data_caoi,
-        positions=[0, 1],
-        patch_artist=True,
-        showfliers=False,
-        widths=0.6,
-        showmeans=True,
-        meanline=True,
-        meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
-        medianprops={'linewidth': 1.5, 'alpha': 0.2},
-    )
-    colors_caoi_djf = ["lightblue", "orange"]
-    for patch, color in zip(bp_caoi_djf["boxes"], colors_caoi_djf):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.2)
-    
-    # Set line properties for DJF boxplot to be less prominent
-    for element in ['whiskers', 'fliers', 'medians', 'caps']:
-        for line in bp_caoi_djf[element]:
-            line.set_alpha(0.2)
+        # CAOI - Plot DJF first (background with alpha=0.2)
+        bp_caoi_djf = ax2.boxplot(
+            djf_data_caoi,
+            positions=[0, 1],
+            patch_artist=True,
+            showfliers=False,
+            widths=0.6,
+            showmeans=True,
+            meanline=True,
+            meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
+            medianprops={'linewidth': 1.5, 'alpha': 0.2},
+        )
+        colors_caoi_djf = ["lightblue", "orange"]
+        for patch, color in zip(bp_caoi_djf["boxes"], colors_caoi_djf):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.2)
+        
+        # Set line properties for DJF boxplot to be less prominent
+        for element in ['whiskers', 'fliers', 'medians', 'caps']:
+            for line in bp_caoi_djf[element]:
+                line.set_alpha(0.2)
 
-    # CAOI - Plot events on top (foreground)
-    bp_caoi_event = ax2.boxplot(
-        event_data_caoi,
-        positions=[0, 1],
-        patch_artist=True,
-        showfliers=False,
-        widths=0.6,
-        showmeans=True,
-        meanline=True,
-        meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
-        medianprops={'linewidth': 1.5},
-    )
-    colors_caoi_event = ["blue", "orange"]
-    for patch, color in zip(bp_caoi_event["boxes"], colors_caoi_event):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.7)
+        # CAOI - Plot events on top (foreground)
+        bp_caoi_event = ax2.boxplot(
+            event_data_caoi,
+            positions=[0, 1],
+            patch_artist=True,
+            showfliers=False,
+            widths=0.6,
+            showmeans=True,
+            meanline=True,
+            meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
+            medianprops={'linewidth': 1.5},
+        )
+        colors_caoi_event = ["blue", "orange"]
+        for patch, color in zip(bp_caoi_event["boxes"], colors_caoi_event):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
 
-    # Move ylabel to the right side
-    ax2.set_ylabel("CAOI [K]", fontsize=20, labelpad=10)
-    ax2.yaxis.set_label_position("right")
-    ax2.yaxis.tick_right()
-    ax2.set_ylim(ylims_caoi)
-    ax2.tick_params(axis="y", labelsize=16)
-    ax2.grid(axis="y", linestyle="--", alpha=0.5)
-    ax2.set_xticks([0.5])
-    
-    # Update CAOI label to include asterisk for significant difference
-    ax2.set_xticklabels([f"CAOI\nΔ={mean_diff_CAOI:.2f}K{asterisk_CAOI}"], fontsize=20)
-    print(ax2.get_ylim())
+        # Move ylabel to the right side
+        ax2.set_ylabel("CAOI [K]", fontsize=20, labelpad=10, fontname=preferred_font)
+        ax2.yaxis.set_label_position("right")
+        ax2.yaxis.tick_right()
+        ax2.set_ylim(ylims_caoi)
+        ax2.tick_params(axis="y", labelsize=16)
+        ax2.grid(axis="y", linestyle="--", alpha=0.5)
+        ax2.set_xticks([0.5])
+        
+        # Update CAOI label to include asterisk for significant difference
+        ax2.set_xticklabels([f"CAOI\nΔ={mean_diff_CAOI:.2f}K{asterisk_CAOI}"], fontsize=20, fontname=preferred_font)
+        print(ax2.get_ylim())
 
-    # Add legend to distinguish between DJF and events
-    legend_elements = [
-        Patch(facecolor='gray', alpha=0.2, label='DJF'),
-        Patch(facecolor='gray', alpha=0.7, label='events'),
-        Patch(facecolor='blue', alpha=0.7, label='present'),
-        Patch(facecolor='orange', alpha=0.7, label='future')
-    ]
-    ax1.legend(handles=legend_elements, loc='upper left', fontsize=16)
+        # Force tick/legend fonts for all text artists in this figure.
+        for ax in (ax1, ax2):
+            for label in ax.get_xticklabels() + ax.get_yticklabels():
+                label.set_fontname(preferred_font)
 
-    # # Add note about significance testing
-    # fig.suptitle(f'{region} - * indicates p < 0.05', fontsize=14, y=0.02)
+        # Add legend to distinguish between DJF and events
+        legend_elements = [
+            Patch(facecolor='gray', alpha=0.2, label='DJF'),
+            Patch(facecolor='gray', alpha=0.7, label='events'),
+            Patch(facecolor='blue', alpha=0.7, label='present'),
+            Patch(facecolor='orange', alpha=0.7, label='future')
+        ]
+        legend = ax1.legend(handles=legend_elements, loc='upper left')
+        for text in legend.get_texts():
+            text.set_fontname(preferred_font)
 
-    plt.tight_layout()
-    plt.savefig(f"{fig_path}/CAOI_contribution_combined_overlay_{region}_with_significance.png", 
-                dpi=300, bbox_inches="tight", facecolor="white", transparent=False)
-    plt.savefig(f"{fig_path}/CAOI_contribution_combined_overlay_{region}_with_significance.pdf", bbox_inches='tight')
-    plt.show()
+        # Debug: show the actual font files Matplotlib resolves for this figure's text.
+        y1_props = ax1.yaxis.label.get_fontproperties()
+        y2_props = ax2.yaxis.label.get_fontproperties()
+        legend_props = legend.get_texts()[0].get_fontproperties()
+        print(f"[FONT DEBUG] preferred_font={preferred_font}")
+        print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
+        print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
+        print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
+        print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
+        print(f"[FONT DEBUG] legend text family={legend_props.get_family()} name={legend_props.get_name()}")
+        print(f"[FONT DEBUG] legend text file={matplotlib.font_manager.findfont(legend_props, fallback_to_default=True)}")
+        ticklabels = ax1.get_xticklabels()
+        if ticklabels:
+            tick_props = ticklabels[0].get_fontproperties()
+            print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
+            print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
+        yticklabels = ax1.get_yticklabels()
+        if yticklabels:
+            ytick_props = yticklabels[0].get_fontproperties()
+            print(f"[FONT DEBUG] ax1 ytick[0] family={ytick_props.get_family()} name={ytick_props.get_name()}")
+            print(f"[FONT DEBUG] ax1 ytick[0] file={matplotlib.font_manager.findfont(ytick_props, fallback_to_default=True)}")
+
+        # # Add note about significance testing
+        # fig.suptitle(f'{region} - * indicates p < 0.05', fontsize=14, y=0.02)
+
+        plt.tight_layout()
+        plt.savefig(f"{fig_path}/CAOI_contribution_combined_overlay_{region}_with_significance.png", 
+                    dpi=300, bbox_inches="tight", facecolor="white", transparent=False)
+        plt.savefig(f"{fig_path}/CAOI_contribution_combined_overlay_{region}_with_significance.pdf", bbox_inches='tight')
+        plt.show()
 # %%
