@@ -86,7 +86,7 @@ read_extent_precip = {
 }
 
 box = {
-    "JS": [130, 150, 30, 60],  # for mask
+    "JS": [130, 150, 30, 60],  # for mask (50 north for Fig S3)
     "NA": [285, 295, 30, 45]   # for mask
 }
 
@@ -199,7 +199,7 @@ VAR_CONFIG_DIFF = {
         'labname': 'Δ precipitation [mm 6h$^{-1}$]'
     },
     'EVAP': {
-        'cmap_name': 'RdBu_r',
+        'cmap_name': 'vik',
         'boundaries': np.arange(-0.8, 0.9, 0.1),
         'cbarticks': np.arange(-0.8, 0.9, 0.2),
         'labname': 'Δ evaporation [mm 6h$^{-1}$]'
@@ -469,7 +469,12 @@ def calculate_space_mean(CAOI_djf):
     #method from evolution script
     # CAOI_djf__mean_space = np.nanmean(np.nanmean(CAOI_djf, axis=1), axis=1)
 
-    return CAOI_djf__mean_space 
+    return CAOI_djf__mean_space
+
+def calculate_space_mean_no_weights(CAOI_djf):
+    """(time,lat, lon) --> (time,) without latitudinal weights"""
+    CAOI_djf__mean_space = CAOI_djf.mean(dim=["lat", "lon"], skipna=True)
+    return CAOI_djf__mean_space
 
 def calculate_time_mean(CAOI_djf):
     """(time,lat, lon) --> (lat, lon)"""
@@ -1427,6 +1432,7 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
         elif lag == 2:
             event_mask_time_func = event_plus2_mask_time
         area_slice = read_extent_precip[region] # to match lat/lon of sea ice data with precipitation data
+
     else:
         # For other variables, use the box defined in the VAR_CONFIG
         map_projection = ccrs.PlateCarree()
@@ -1439,7 +1445,7 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
         # SST = get_masked_ensemble(data_dict[f"{region}_{ds_name}"], region, ds_name, "SST", event_mask_time_func, member_ids)
         if varname in ['PRECIP', 'EVAP', 'EP', 'SST']:
             SLP = get_masked_ensemble(data_dict_precip[f"{region}_{ds_name}"], region, ds_name, "SLP_ano", event_mask_time_func, member_ids)
-            SST = get_masked_ensemble(data_dict_precip[f"{region}_{ds_name}"], region, ds_name, "SST", event_mask_time_func, member_ids)
+            SST = get_masked_ensemble(data_dict[f"{region}_{ds_name}"], region, ds_name, "SSTH_masked", event_mask_time, member_ids)
             time_slice = slice(None, None)  # Use all times for precipitation, evaporation, and P-E
         else:
             time_slice = djf_mask(data_dict_ice[f"{region}_present"], 'present')
@@ -1481,7 +1487,7 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
         # SST = get_masked_ensemble(data_dict[f"{region}_{ds_name}"], region, ds_name, "SST", event_mask_time_func, member_ids)
         if varname in ['PRECIP', 'EVAP', 'EP', 'SST']:
             SLP = get_masked_ensemble(data_dict_precip[f"{region}_{ds_name}"], region, ds_name, "SLP_ano", event_mask_time_func, member_ids)
-            SST = get_masked_ensemble(data_dict_precip[f"{region}_{ds_name}"], region, ds_name, "SST", event_mask_time_func, member_ids)
+            SST = get_masked_ensemble(data_dict[f"{region}_{ds_name}"], region, ds_name, "SSTH_masked", event_mask_time, member_ids)
             time_slice = slice(None, None)  # Use all times for precipitation, evaporation, and P-E
         else:
             time_slice = djf_mask(data_dict_ice[f"{region}_future"], ds_name)
@@ -1523,9 +1529,9 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
         if varname in ['PRECIP', 'EVAP', 'EP', 'SST']:
             SLP_present = get_masked_ensemble(data_dict_precip[f"{region}_present"], region, "present", "SLP_ano", event_mask_time_func, member_ids)
             SLP_future = get_masked_ensemble(data_dict_precip[f"{region}_future"], region, "future", "SLP_ano", event_mask_time_func, member_ids)
-            SST_present = get_masked_ensemble(data_dict_precip[f"{region}_present"], region, "present", "SST", event_mask_time_func, member_ids)
+            SST_present = get_masked_ensemble(data_dict[f"{region}_present"], region, "present", "SSTH_masked", event_mask_time, member_ids)
             SST_present = SST_present.where(SST_present > 273)  # Mask out SST values below 0°C
-            SST_future = get_masked_ensemble(data_dict_precip[f"{region}_future"], region, "future", "SST", event_mask_time_func, member_ids)
+            SST_future = get_masked_ensemble(data_dict[f"{region}_future"], region, "future", "SSTH_masked", event_mask_time, member_ids)
             SST_future = SST_future.where(SST_future > 273)  # Mask out SST values below 0°C
             time_slice_present = slice(None, None)  # Use all times for precipitation, evaporation, and P-E
             time_slice_future = slice(None, None)  # Use all times for precipitation, evaporation, and P-E
@@ -1682,9 +1688,14 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
             mask = grad_mag < 100
 
             # Mask SST values
-            SST_mean = SST_mean.where(mask)
-            # SST_contour = ax.contour(lons_plot, lats, SST_mean, levels = np.arange(275, 305, 5), colors = 'black', linewidths = 2, transform=ccrs.PlateCarree())
-            # ax.clabel(SST_contour, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
+            print('Mean over box (graphically): ', calculate_space_mean(SST_mean.sel(lat=slice(box[region][2], box[region][3]), lon=slice(box[region][0], box[region][1]))))
+            event_SSTH_present = get_event_in_box_ensemble(data_dict[f'{region}_present'], region, 'present', 'SSTH_masked', member_ids)
+            event_SSTH_present_space_mean = calculate_space_mean(event_SSTH_present)
+            print('Mean over box for event SSTH_present: ', event_SSTH_present_space_mean.values.flatten().mean())
+            SST_mean = SST_mean.where(mask).sel(lat=slice(extent[2], extent[3]), lon=slice(extent[0], extent[1]))
+            
+            SST_contour = ax.contour(SST_mean.lon, SST_mean.lat, SST_mean, levels = np.arange(275, 305, 5), colors = 'black', linewidths = 2, transform=ccrs.PlateCarree())
+            ax.clabel(SST_contour, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
             # ax.contour(lons_plot, lats, calculate_time_mean(SLP), levels=np.arange(-6, 0, 2), colors='dimgrey', linestyles = 'dashed',linewidths=2, transform=ccrs.PlateCarree(), alpha=1)
             # ax.contour(lons_plot, lats, calculate_time_mean(SLP), levels=np.arange(0, 8, 2), colors='dimgrey', linewidths=2, transform=ccrs.PlateCarree(), alpha=1)
         if varname == 'CAOI':
@@ -1735,11 +1746,13 @@ def plot_single_map(data_2d, lons, lats, region, timeframe_name, extent, cmap_na
         else:
             print(f"No 50% sea ice contour available for {timeframe_name} (max: {max_ice_concentration:.3f})")
     elif timeframe_name == '10th_diff' or timeframe_name == 'diff':
-        # if varname in ['PRECIP', 'EVAP', 'EP', 'SST']:
-        #     SST_contour_neg = ax.contour(lons_plot, lats, calculate_time_mean(SST_future)-calculate_time_mean(SST_present), levels = [-4, -3, -2, -1], colors = 'black', negative_linestyles = 'dashed', linewidths = 2, transform=ccrs.PlateCarree())
-        #     SST_contour_pos = ax.contour(lons_plot, lats, calculate_time_mean(SST_future)-calculate_time_mean(SST_present), levels = [1, 2, 3, 4, 5, 6], colors = 'black', negative_linestyles = 'dashed', linewidths = 2, transform=ccrs.PlateCarree())
-        #     ax.clabel(SST_contour_neg, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
-        #     ax.clabel(SST_contour_pos, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
+        if varname in ['PRECIP', 'EVAP', 'EP', 'SST']:
+            SST_diff_mean = calculate_time_mean(SST_future)-calculate_time_mean(SST_present)
+            SST_diff_mean = SST_diff_mean.sel(lat=slice(extent[2], extent[3]), lon=slice(extent[0], extent[1]))
+            SST_contour_neg = ax.contour(SST_diff_mean.lon, SST_diff_mean.lat, SST_diff_mean, levels = [-4, -3, -2, -1], colors = 'black', negative_linestyles = 'dashed', linewidths = 2, transform=ccrs.PlateCarree())
+            SST_contour_pos = ax.contour(SST_diff_mean.lon, SST_diff_mean.lat, SST_diff_mean, levels = [1, 2, 3, 4, 5, 6], colors = 'black', negative_linestyles = 'dashed', linewidths = 2, transform=ccrs.PlateCarree())
+            ax.clabel(SST_contour_neg, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
+            ax.clabel(SST_contour_pos, inline=True, fontsize=16, fmt='%d', colors='black', use_clabeltext=True)
         # if varname == 'CAOI':
         #     # Get SST masked with the same event mask and extent as CAOI present and future
         #     SST_present_event_masked = get_masked_ensemble(
@@ -3391,6 +3404,8 @@ data_dict_precip = {
     # add other regions/timeframes as needed
 }
 
+#%%
+
 data_dict_ice = {
     "NA_present": read_ensemble_data_ice("NA", "present", member_ids),
     "NA_future": read_ensemble_data_ice("NA", "future", member_ids),
@@ -4374,13 +4389,20 @@ def plot_caoi_contribution_combined_with_significance(region):
         ylims_temp = (255, 310)
         ylims_caoi = (-15, 40)
 
-    ylims_temp = (245, 310)
-    ylims_caoi = (-10, 30)
+    ylims_temp = (270, 310)
+    ylims_caoi = (-11, 16)
 
     # EVENT DATA (foreground)
     event_CAOI_present = get_event_in_box_ensemble(data_dict[f'{region}_present'], region, 'present', 'CAOI', member_ids)
     event_CAOI_present = calculate_space_mean(event_CAOI_present)
     event_SSTH_present = get_event_in_box_ensemble(data_dict[f'{region}_present'], region, 'present', 'SSTH_masked', member_ids)
+    event_SSTH_present_space_mean = calculate_space_mean(event_SSTH_present)
+    event_SSTH_present_space_mean_noweights = calculate_space_mean_no_weights(event_SSTH_present)
+
+    print(f"Event SSTH present space mean (weighted): {event_SSTH_present_space_mean.values.flatten().mean():.2f} K")
+    print(f"Event SSTH present space mean (unweighted): {event_SSTH_present_space_mean_noweights.values.flatten().mean():.2f} K")
+
+
     event_SSTH_present = calculate_space_mean(event_SSTH_present)
     event_TH_850_present = get_event_in_box_ensemble(data_dict[f'{region}_present'], region, 'present', 'TH_850_masked', member_ids)
     event_TH_850_present = calculate_space_mean(event_TH_850_present)
@@ -4442,6 +4464,11 @@ def plot_caoi_contribution_combined_with_significance(region):
     mean_diff_TH850 = np.nanmean(event_data_temp[3]) - np.nanmean(event_data_temp[2])
     mean_diff_CAOI = np.nanmean(event_data_caoi[1]) - np.nanmean(event_data_caoi[0])
 
+    # Mean diffs for DJF data
+    mean_diff_SSTH_DJF = np.nanmean(djf_data_temp[1]) - np.nanmean(djf_data_temp[0])
+    mean_diff_TH850_DJF = np.nanmean(djf_data_temp[3]) - np.nanmean(djf_data_temp[2])
+    mean_diff_CAOI_DJF = np.nanmean(djf_data_caoi[1]) - np.nanmean(djf_data_caoi[0])
+
     # Perform significance testing for EVENT data
     is_sig_SSTH, p_val_SSTH, t_stat_SSTH = compute_significance_ttest(event_data_temp[0], event_data_temp[1])
     is_sig_TH850, p_val_TH850, t_stat_TH850 = compute_significance_ttest(event_data_temp[2], event_data_temp[3])
@@ -4457,6 +4484,11 @@ def plot_caoi_contribution_combined_with_significance(region):
     print(compute_significance_ttest(event_data_temp[2], event_data_temp[3]))
     print(compute_significance_ttest(event_data_caoi[0], event_data_caoi[1]))
     print("==================================================")
+    print(f"DJF SSTH: Δ={mean_diff_SSTH_DJF:.2f}K")
+    print(f"DJF TH850: Δ={mean_diff_TH850_DJF:.2f}K")
+    print(f"DJF CAOI: Δ={mean_diff_CAOI_DJF:.2f}K")
+    print("==================================================")
+
 
     # Create labels with asterisks for significant differences
     asterisk_SSTH = "*" if is_sig_SSTH else ""
@@ -4480,7 +4512,7 @@ def plot_caoi_contribution_combined_with_significance(region):
             showmeans=True,
             meanline=True,
             meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
-            medianprops={'linewidth': 1.5, 'alpha': 0.2},
+            medianprops={'linewidth': 0, 'alpha': 0.2},
         )
         colors_temp_djf = ["lightblue", "orange", "lightblue", "orange"]
         for patch, color in zip(bp_temp_djf["boxes"], colors_temp_djf):
@@ -4502,7 +4534,7 @@ def plot_caoi_contribution_combined_with_significance(region):
             showmeans=True,
             meanline=True,
             meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
-            medianprops={'linewidth': 1.5},
+            medianprops={'linewidth': 0},
         )
         colors_temp_event = ["blue", "orange", "blue", "orange"]
         for patch, color in zip(bp_temp_event["boxes"], colors_temp_event):
@@ -4510,15 +4542,18 @@ def plot_caoi_contribution_combined_with_significance(region):
             patch.set_alpha(0.7)
 
         ax1.set_ylabel("Θ [K]", fontsize=20, fontname=preferred_font)
-        # ax1.set_ylim(ylims_temp)
+        ax1.set_ylim(ylims_temp)
         ax1.tick_params(axis="both", labelsize=16)
         ax1.grid(axis="y", linestyle="--", alpha=0.5)
         ax1.set_xticks([0.5, 2.5])
+
+        SST_text = 'SST'
+        TH_text = '850'
         
         # Update labels to include asterisks for significant differences
         xticklabels = [
-            f"SST\nΔ={mean_diff_SSTH:.2f}K{asterisk_SSTH}",
-            f"850\nΔ={mean_diff_TH850:.2f}K{asterisk_TH850}"
+            f"$\Theta_{{{SST_text}}}$\nΔ={mean_diff_SSTH:.2f}K{asterisk_SSTH}",
+            f"$\Theta_{{{TH_text}}}$\nΔ={mean_diff_TH850:.2f}K{asterisk_TH850}"
         ]
         ax1.set_xticklabels(xticklabels, fontsize=20, fontname=preferred_font)
         print(ax1.get_ylim())
@@ -4533,7 +4568,7 @@ def plot_caoi_contribution_combined_with_significance(region):
             showmeans=True,
             meanline=True,
             meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--', 'alpha': 0.2},
-            medianprops={'linewidth': 1.5, 'alpha': 0.2},
+            medianprops={'linewidth': 0, 'alpha': 0.2},
         )
         colors_caoi_djf = ["lightblue", "orange"]
         for patch, color in zip(bp_caoi_djf["boxes"], colors_caoi_djf):
@@ -4555,7 +4590,7 @@ def plot_caoi_contribution_combined_with_significance(region):
             showmeans=True,
             meanline=True,
             meanprops={'color': 'black', 'linewidth': 1.5, 'linestyle': '--'},
-            medianprops={'linewidth': 1.5},
+            medianprops={'linewidth': 0},
         )
         colors_caoi_event = ["blue", "orange"]
         for patch, color in zip(bp_caoi_event["boxes"], colors_caoi_event):
@@ -4582,8 +4617,8 @@ def plot_caoi_contribution_combined_with_significance(region):
 
         # Add legend to distinguish between DJF and events
         legend_elements = [
-            Patch(facecolor='gray', alpha=0.2, label='DJF'),
-            Patch(facecolor='gray', alpha=0.7, label='events'),
+            # Patch(facecolor='gray', alpha=0.2, label='DJF'),
+            # Patch(facecolor='gray', alpha=0.7, label='events'),
             Patch(facecolor='blue', alpha=0.7, label='present'),
             Patch(facecolor='orange', alpha=0.7, label='future')
         ]
@@ -4591,27 +4626,27 @@ def plot_caoi_contribution_combined_with_significance(region):
         for text in legend.get_texts():
             text.set_fontname(preferred_font)
 
-        # Debug: show the actual font files Matplotlib resolves for this figure's text.
-        y1_props = ax1.yaxis.label.get_fontproperties()
-        y2_props = ax2.yaxis.label.get_fontproperties()
-        legend_props = legend.get_texts()[0].get_fontproperties()
-        print(f"[FONT DEBUG] preferred_font={preferred_font}")
-        print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
-        print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
-        print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
-        print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
-        print(f"[FONT DEBUG] legend text family={legend_props.get_family()} name={legend_props.get_name()}")
-        print(f"[FONT DEBUG] legend text file={matplotlib.font_manager.findfont(legend_props, fallback_to_default=True)}")
-        ticklabels = ax1.get_xticklabels()
-        if ticklabels:
-            tick_props = ticklabels[0].get_fontproperties()
-            print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
-            print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
-        yticklabels = ax1.get_yticklabels()
-        if yticklabels:
-            ytick_props = yticklabels[0].get_fontproperties()
-            print(f"[FONT DEBUG] ax1 ytick[0] family={ytick_props.get_family()} name={ytick_props.get_name()}")
-            print(f"[FONT DEBUG] ax1 ytick[0] file={matplotlib.font_manager.findfont(ytick_props, fallback_to_default=True)}")
+        # # Debug: show the actual font files Matplotlib resolves for this figure's text.
+        # y1_props = ax1.yaxis.label.get_fontproperties()
+        # y2_props = ax2.yaxis.label.get_fontproperties()
+        # legend_props = legend.get_texts()[0].get_fontproperties()
+        # print(f"[FONT DEBUG] preferred_font={preferred_font}")
+        # print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
+        # print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
+        # print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
+        # print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
+        # print(f"[FONT DEBUG] legend text family={legend_props.get_family()} name={legend_props.get_name()}")
+        # print(f"[FONT DEBUG] legend text file={matplotlib.font_manager.findfont(legend_props, fallback_to_default=True)}")
+        # ticklabels = ax1.get_xticklabels()
+        # if ticklabels:
+        #     tick_props = ticklabels[0].get_fontproperties()
+        #     print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
+        #     print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
+        # yticklabels = ax1.get_yticklabels()
+        # if yticklabels:
+        #     ytick_props = yticklabels[0].get_fontproperties()
+        #     print(f"[FONT DEBUG] ax1 ytick[0] family={ytick_props.get_family()} name={ytick_props.get_name()}")
+        #     print(f"[FONT DEBUG] ax1 ytick[0] file={matplotlib.font_manager.findfont(ytick_props, fallback_to_default=True)}")
 
         # # Add note about significance testing
         # fig.suptitle(f'{region} - * indicates p < 0.05', fontsize=14, y=0.02)

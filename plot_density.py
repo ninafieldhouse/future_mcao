@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.path as mpath
 from matplotlib import cm
+import cmcrameri.cm as cmc
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import matplotlib
@@ -280,7 +281,7 @@ regions = ['JS']
 timeframes = ['present', 'future']
 # airstreams = ['BCAR', 'DI', 'nonBCAR', 'LL', 'ALL']
 airstreams = ['ALL', 'UL', 'LL']  # For now, only plot ALL airstream
-# airstreams = ['ALL']  # For now, only plot ALL airstreams
+airstreams = ['LL']  # For now, only plot ALL airstreams
 # airstreams = ['ALL', 'BCAR', 'DI']  # For now, only plot BCAR airstream
 
 #density files:
@@ -391,12 +392,121 @@ for density_type in density_types:
                         plt.savefig(f"{fig_path}density_{airstream}_{region}_{timeframe}_{varname}_{time_idx}.png", dpi=300, bbox_inches='tight')
                         plt.savefig(f"{fig_path}density_{airstream}_{region}_{timeframe}_{varname}_{time_idx}.pdf", bbox_inches='tight')
                     plt.show()
+
+#%% Plot present and future of percentage grid
+regions = ['JS', 'NA']
+timeframes = ['present', 'future']
+# airstreams = ['BCAR', 'DI', 'nonBCAR', 'LL', 'ALL']
+airstreams = ['ALL', 'UL', 'LL']  # For now, only plot ALL airstream
+airstreams = ['LL']  # For now, only plot ALL airstreams
+# airstreams = ['ALL', 'BCAR', 'DI']  # For now, only plot BCAR airstream
+
+#density files:
+density_types = ['all']
+
+# density_types = ['timesteps', 'all']
+for density_type in density_types:
+    if density_type == 'all':
+        levels_dict['dTH_24'] = np.arange(0, 0.15, 0.025)  # Adjust levels for 24-hourly dTH
+    else:
+        levels_dict['dTH_24'] = np.arange(-3, 3.25, 0.25)
+    for region in regions:
+        for timeframe in timeframes:
+            for airstream in airstreams:
+                density_file = f"{path}density_{density_type}_CAO_{airstream}_trajs_{region}_{timeframe}_ALL_with_dTH"
+                print(f"Processing density file: {density_file}")
+                ds = load_density_data(density_file)
+                lon = ds.longitude
+                lat = ds.latitude
+
+                if 'time' in ds.dims:
+                    time_hours = ds.time.values / np.timedelta64(1, 'h')
+                    print("Time coordinate in hours:", time_hours)
+                
+                # Create meshgrid for coordinates
+                lon_2d, lat_2d = np.meshgrid(ds.longitude, ds.latitude)
+                lon_flat = lon_2d.flatten()
+                lat_flat = lat_2d.flatten()
+
+                varname = 'dTH_24'
+                cmap = cmc.oslo_r
+                levels = levels_dict[varname]
+                time_idxs = np.arange(len(ds.time)) if 'time' in ds.dims else [0]
+                for time_idx in time_idxs:
+                    #COUNTS
+                    percentage_grid, threshold_50, threshold_90, threshold_95 = count_data(ds)
+
+                    mask_95 = np.where(percentage_grid<=threshold_95, np.nan, 1)
+
+                    # Apply mask to data
+                    data = percentage_grid * mask_95
+
+                    # Flatten the arrays for scatter plot
+                    data_flat = data.flatten()
+
+                    # Remove NaN values
+                    mask = ~np.isnan(data_flat)
+                    lon_points = lon_flat[mask]
+                    lat_points = lat_flat[mask]
+                    data_points = data_flat[mask]
+
+                    if airstream in ['ALL', 'UL', 'LL']:
+                        map_extent = map_extent
+                        central_longitudes = central_longitudes
+                    else:
+                        map_extent = map_extent_DI
+                        central_longitudes = central_longitudes_DI
+                    fig = plt.figure(figsize=(10, 8), layout='constrained')
+                    fig = plt.figure(figsize=get_figsize_from_map_extent(map_extent[region], base_height=6), layout='constrained')
+                    ax = fig.add_subplot(1, 1, 1, projection=create_map_projection(region, central_longitudes=central_longitudes))
+                    ax = setup_map_axes(ax, region, create_map_projection(region, central_longitudes=central_longitudes), map_extent=map_extent)
+
+                    # Create scatter plot
+                    sc = ax.scatter(lon_points, lat_points, c=data_points, 
+                                    cmap=cmap, s=6, transform=ccrs.PlateCarree(), vmin = levels.min(), vmax = levels.max())
+                    
+                    if airstream != 'DI':
+                        contour_50_map = ax.contour(lon, lat, percentage_grid, 
+                                                    levels=[threshold_50], colors='red', alpha=1, linewidths=2,
+                                                    transform=ccrs.PlateCarree(), linestyles='-', label='50%')
+                        # contour_90_map = ax.contour(lon, lat, percentage_grid, 
+                        #                             levels=[threshold_90], colors='red', linewidths=2,
+                        #                             transform=ccrs.PlateCarree(), linestyles='-')
+                        contour_95_map = ax.contour(lon, lat, percentage_grid, 
+                                                    levels=[threshold_95], colors='darkred', linewidths=2,
+                                                    transform=ccrs.PlateCarree(), linestyles='-', label='95%')
+                    if airstream == 'DI':
+                        if time_idx in range(0, 2):
+                            contour_50_map = ax.contour(lon, lat, percentage_grid, 
+                                                    levels=[threshold_50], colors='red', alpha=1, linewidths=2,
+                                                    transform=ccrs.PlateCarree(), linestyles='-', label='50%')
+                            # contour_90_map = ax.contour(lon, lat, percentage_grid, 
+                            #                             levels=[threshold_90], colors='red', linewidths=2,
+                            #                             transform=ccrs.PlateCarree(), linestyles='-')
+                            contour_95_map = ax.contour(lon, lat, percentage_grid, 
+                                                        levels=[threshold_95], colors='darkred', linewidths=2,
+                                                        transform=ccrs.PlateCarree(), linestyles='-', label='95%')
+
+                    cbar = plt.colorbar(sc, ax=ax, orientation='horizontal', pad=0.05, aspect=50, extend='max', shrink=get_colorbar_shrink(map_extent[region], base_width=10.0, base_shrink=1.0))
+                    cbar.set_label('[%]', size=20)
+                    cbar.set_ticks(levels[::1])  # Use every level for cleaner ticks
+                    cbar.ax.tick_params(labelsize=16)
+                    legend_elements = [Line2D([0], [0], color='blue', lw=2, label='50% of trajectories'),
+                                    Line2D([0], [0], color='red', lw=2, label='90% of trajectories'),
+                                    Line2D([0], [0], color='darkred', lw=2, label='95% of trajectories')]
+                    if density_type == 'all':
+                        plt.savefig(f"{fig_path}density_percentage_{airstream}_{region}_{timeframe}_{varname}_99.png", dpi=300, bbox_inches='tight')
+                        plt.savefig(f"{fig_path}density_percentage_{airstream}_{region}_{timeframe}_{varname}_99.pdf", bbox_inches='tight')
+                    else:
+                        plt.savefig(f"{fig_path}density_percentage_{airstream}_{region}_{timeframe}_{varname}_{time_idx}.png", dpi=300, bbox_inches='tight')
+                        plt.savefig(f"{fig_path}density_percentage_{airstream}_{region}_{timeframe}_{varname}_{time_idx}.pdf", bbox_inches='tight')
+                    plt.show()
 #%%
 # Plotting differences between present and future density data
 regions = ['JS', 'NA']
 airstreams = ['BCAR', 'DI', 'nonBCAR', 'LL', 'ALL']
 airstreams = ['ALL', 'UL', 'LL']  # For now, only plot ALL airstream
-
+airstreams = ['LL']
 # airstreams = ['ALL']  # For now, only plot ALL airstreams
 
 #density files:

@@ -538,7 +538,7 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
             # For TH, use the current stats
             min_th_idx = np.argmin(means)
             min_th_time = rel_times[min_th_idx]
-        ax1.axvline(x=min_th_time, color=colors[timeframe], linestyle='--', alpha=0.7, linewidth=0.8)
+        ax1.axvline(x=min_th_time, color=colors[timeframe], linestyle='--' if timeframe == 'future' else '-', alpha=0.7, linewidth=0.8)
     
     ax1.set_xlabel(r'days relative to t$_{\mathrm{MCAO}}$')
     if varname == 'Q':
@@ -651,23 +651,23 @@ def plot_combined_evolution_rates_cooling_warming(region, airstream, varname='TH
         for text in legend.get_texts():
             text.set_fontname(preferred_font)
 
-    # Debug: print actual resolved font files used by representative text artists.
-    y1_props = ax1.yaxis.label.get_fontproperties()
-    y2_props = ax2.yaxis.label.get_fontproperties()
-    print(f"[FONT DEBUG] preferred_font={preferred_font}")
-    print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
-    print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
-    print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
-    print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
-    ticklabels = ax1.get_xticklabels()
-    if ticklabels:
-        tick_props = ticklabels[0].get_fontproperties()
-        print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
-        print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
-    if legend is not None and legend.get_texts():
-        leg_props = legend.get_texts()[0].get_fontproperties()
-        print(f"[FONT DEBUG] legend[0] family={leg_props.get_family()} name={leg_props.get_name()}")
-        print(f"[FONT DEBUG] legend[0] file={matplotlib.font_manager.findfont(leg_props, fallback_to_default=True)}")
+    # # Debug: print actual resolved font files used by representative text artists.
+    # y1_props = ax1.yaxis.label.get_fontproperties()
+    # y2_props = ax2.yaxis.label.get_fontproperties()
+    # print(f"[FONT DEBUG] preferred_font={preferred_font}")
+    # print(f"[FONT DEBUG] ax1 ylabel family={y1_props.get_family()} name={y1_props.get_name()}")
+    # print(f"[FONT DEBUG] ax1 ylabel file={matplotlib.font_manager.findfont(y1_props, fallback_to_default=True)}")
+    # print(f"[FONT DEBUG] ax2 ylabel family={y2_props.get_family()} name={y2_props.get_name()}")
+    # print(f"[FONT DEBUG] ax2 ylabel file={matplotlib.font_manager.findfont(y2_props, fallback_to_default=True)}")
+    # ticklabels = ax1.get_xticklabels()
+    # if ticklabels:
+    #     tick_props = ticklabels[0].get_fontproperties()
+    #     print(f"[FONT DEBUG] ax1 xtick[0] family={tick_props.get_family()} name={tick_props.get_name()}")
+    #     print(f"[FONT DEBUG] ax1 xtick[0] file={matplotlib.font_manager.findfont(tick_props, fallback_to_default=True)}")
+    # if legend is not None and legend.get_texts():
+    #     leg_props = legend.get_texts()[0].get_fontproperties()
+    #     print(f"[FONT DEBUG] legend[0] family={leg_props.get_family()} name={leg_props.get_name()}")
+    #     print(f"[FONT DEBUG] legend[0] file={matplotlib.font_manager.findfont(leg_props, fallback_to_default=True)}")
 
     plt.tight_layout()
     plt.savefig(f"{figpath}combined_evolution_rates_{varname}_{airstream}_{region}_coolingwarming.png", dpi=300, bbox_inches='tight')
@@ -729,7 +729,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
     if region == 'JS':
         letters = ['a', 'b', 'c']
     elif region == 'NA':
-        letters = ['d', 'e', 'f']
+        letters = ['a', 'b', 'c']
     
     # Create subplots with width ratios: evolution plot gets 3 units, each boxplot gets 1 unit
     # fig, axes = plt.subplots(1, 3, figsize=((my_width*3, my_width/fourto3)), 
@@ -759,7 +759,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
     print(f'WBC: number of present trajectories: {len(warming_rate_present)}, number of future trajectories: {len(warming_rate_future)}')
     box1 = ax1.boxplot([data_warming[0]], positions=[1], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='blue', color='blue', alpha=0.5),
-                    medianprops=dict(color='blue', linewidth=0.8),
+                    medianprops=dict(color='blue', linewidth=0),
                     whiskerprops=dict(color='blue'),
                     capprops=dict(color='blue'),
                     whis=(1, 99),
@@ -769,7 +769,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
                     meanprops=dict(color='black', linestyle='--', linewidth=0.8))
     box2 = ax1.boxplot([data_warming[1]], positions=[2], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='orange', color='orange', alpha=0.5),
-                    medianprops=dict(color='darkorange', linewidth=0.8),
+                    medianprops=dict(color='darkorange', linewidth=0),
                     whiskerprops=dict(color='orange'),
                     capprops=dict(color='orange'),
                     whis=(1, 99),
@@ -802,7 +802,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
     # Vertical boxplots
     box1 = ax2.boxplot([data_warming[0]], positions=[1], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='blue', color='blue', alpha=0.5),
-                    medianprops=dict(color='blue', linewidth=0.8),
+                    medianprops=dict(color='blue', linewidth=0),
                     whiskerprops=dict(color='blue'),
                     capprops=dict(color='blue'),
                     whis=(1, 99),
@@ -813,7 +813,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
 
     box2 = ax2.boxplot([data_warming[1]], positions=[2], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='orange', color='orange', alpha=0.5),
-                    medianprops=dict(color='darkorange', linewidth=0.8),
+                    medianprops=dict(color='darkorange', linewidth=0),
                     whiskerprops=dict(color='orange'),
                     capprops=dict(color='orange'),
                     whis=(1, 99),
@@ -843,7 +843,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
     
     box5 = ax5.boxplot([data_warming[0]], positions=[1], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='blue', color='blue', alpha=0.5),
-                    medianprops=dict(color='blue', linewidth=0.8),
+                    medianprops=dict(color='blue', linewidth=0),
                     whiskerprops=dict(color='blue'),
                     capprops=dict(color='blue'),
                     whis=(1, 99),
@@ -853,7 +853,7 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
                     meanprops=dict(color='black', linestyle='--', linewidth=0.8))
     box6 = ax5.boxplot([data_warming[1]], positions=[2], widths=0.6, patch_artist=True,
                     boxprops=dict(facecolor='orange', color='orange', alpha=0.5),
-                    medianprops=dict(color='darkorange', linewidth=0.8),
+                    medianprops=dict(color='darkorange', linewidth=0),
                     whiskerprops=dict(color='orange'),
                     capprops=dict(color='orange'),
                     whis=(1, 99),
