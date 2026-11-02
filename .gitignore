@@ -1,0 +1,23 @@
+.DS_Store
+._*
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Archived/superseded code and reference material kept locally but not tracked
+# in the published repo (see README for why each of these is out of scope)
+scripts_old_airstream/
+trajs/
+TRAJECTORY_FILE
+backward_forward_trajectories_cao_JS.sh
+backward_forward_trajectories_cao_present_NA.sh
+backward_forward_trajectories_cao_template.sh
+dates_CAO_max_intens.sh
+density_map_cooling.py
+density_map_cooling_franziska.py
+density_trajs_all.sh
+false_discovery_rate.py
+gridding_density_map_final_franziska.sh
+mypdflatex.sh
+plot_trajectories_old.py
+test_fix_trajectory_times.sh
