@@ -28,7 +28,6 @@ rm folder_input
 ## Initialization parameters
 hours_backward_tracing=-168
 radius=250	
-F
 ## Set up directories
 folder_traj=${CAO_DATA_ROOT}/${member_id}/lagranto/traj/JS  # Change path to your data folder (here trajectory files are saved)
 folder_input=${CAO_DATA_ROOT}/${member_id}/lagranto/cao_input/JS # Change path to your data folder (text files as input for Lagranto)

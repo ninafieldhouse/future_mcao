@@ -116,19 +116,3 @@ def process_all_files():
 if __name__ == "__main__":
     # Process all files
     process_all_files()
-    
-    # Optional: Display first few lines of one fixed file to verify
-    print("\n" + "="*50)
-    print("Sample output from JS present:")
-    print("="*50)
-    
-    sample_file = f"{config.LAGRANTO_DIR}/CAO_BCAR_trajs_JS_present_ALL.txt.fixed"
-    try:
-        with open(sample_file, 'r') as f:
-            for i, line in enumerate(f):
-                if i < 40:  # Show first 40 lines
-                    print(line.rstrip())
-                else:
-                    break
-    except FileNotFoundError:
-        print(f"Sample file not found: {sample_file}")

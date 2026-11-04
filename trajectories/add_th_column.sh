@@ -7,6 +7,8 @@ regions=("JS" "NA")
 for region in "${regions[@]}"; do
 INPUT_DIR="${CAO_DATA_ROOT}/${member_id}/lagranto/traj/${region}"
 for INPUT_FILE in "$INPUT_DIR"/B_*; do
+    [[ "$INPUT_FILE" == *_with_TH.txt ]] && continue  # skip outputs of earlier runs
+    [[ -e "$INPUT_FILE" ]] || continue                 # no trajectory files for this region
     OUTPUT_FILE="${INPUT_FILE}_with_TH.txt"
 
     awk '

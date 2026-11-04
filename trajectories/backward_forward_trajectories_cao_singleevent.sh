@@ -32,7 +32,6 @@ rm folder_input
 ## Initialization parameters
 hours_backward_tracing=-168
 radius=250	
-F
 ## set up directories
 folder_traj=${CAO_DATA_ROOT}/${member_id}/lagranto/traj/  # change path to your data folder (here trajectory files are saved)
 # folder_trace=/net/thermo/atmosdyn/fschnyde/data/lagranto/trace # change path to your data folder (here traced trajectory files are saved)

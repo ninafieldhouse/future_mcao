@@ -321,6 +321,7 @@ for region in regions:
                 # if len(ll_trajs) > 0:
                 #     ll_all = ll_all.concatenate(ll_trajs)
         outdir = f"{config.LAGRANTO_DIR}/"
+        os.makedirs(config.LAGRANTO_DIR, exist_ok=True)
        
         # Concatenate all trajectories for this region and write to ASCII
         def concat_and_write(traj_list, outname):
@@ -460,6 +461,7 @@ for region in regions:
                 # if len(ll_trajs) > 0:
                 #     ll_all = ll_all.concatenate(ll_trajs)
         outdir = f"{config.LAGRANTO_DIR}/"
+        os.makedirs(config.LAGRANTO_DIR, exist_ok=True)
        
         # Concatenate all trajectories for this region and write to ASCII
         def concat_and_write(traj_list, outname):
