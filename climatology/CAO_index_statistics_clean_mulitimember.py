@@ -550,6 +550,10 @@ def cmap_pcolormesh(cmap_name, boundaries, one_way=True):
     # Check if it's a cmcrameri colormap first
     if hasattr(cmc, cmap_name):
         base_cmap = getattr(cmc, cmap_name)
+        # cmcrameri changed the direction of "bilbao" between versions 1.2 and 1.7. The figures use the
+        # version that runs from light (low values) to dark red (high values).
+        if cmap_name == 'bilbao' and sum(base_cmap(0.0)[:3]) < sum(base_cmap(1.0)[:3]):
+            base_cmap = base_cmap.reversed()
     else:
         # Fall back to matplotlib colormaps
         base_cmap = plt.cm.get_cmap(cmap_name, len(boundaries) + 1)
