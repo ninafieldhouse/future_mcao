@@ -16,7 +16,7 @@ Scripts for identifying marine cold-air outbreaks (CAOs) in a CESM2 large ensemb
 - CESM2 output on the CESM archive (CAM `h3` and CICE `h1` history files)
 - [CDO](https://code.mpimet.mpg.de/projects/cdo)
 - LAGRANTO with the CESM interface (`caltra`, `density`), loaded through the `dyn_tools` module
-- Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba, `dypy` and the `lagranto` Python package
+- Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba, `dypy` and the `lagranto` Python package. The plotting scripts need matplotlib 3.5 or newer (they use `layout='constrained'` and `plt.colormaps`).
 
 ## Configuration
 
@@ -80,7 +80,7 @@ Run `trajectories/` steps per ensemble member, except where noted.
 
 Then, in `trajectory_analysis/`:
 
-- `density_trajs.sh` computes trajectory densities on a grid with Lagranto `density`. Output goes to `$CAO_DENSITY_DIR`.
+- `density_trajs.sh` computes trajectory densities on a grid with Lagranto `density`. The Lagranto `density` tool only accepts file names without a directory part, so the script runs inside `$CAO_LAGRANTO_DIR` and then moves the results to `$CAO_DENSITY_DIR`.
 - `plot_density.py` plots the densities and the present-future differences.
 - `plot_trajectories.py` plots trajectories by air stream and the air-stream fractions.
 - `trajectory_statistics.py` and `trajectory_statistics_writesummary.py` compute the weighted statistics and significance tests (t-test, Mann-Whitney U) and plot the warming along trajectories.
