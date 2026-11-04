@@ -1,6 +1,6 @@
 # Marine cold-air outbreak (MCAO) analysis scripts
 
-Scripts for identifying marine cold-air outbreaks (CAOs) in a CESM2 large ensemble, tracing the air masses that feed them with Lagrangian back-trajectories, and comparing the present (1990-2000) and future (2090-2100, SSP3-7.0) climates. Two regions are analysed: the Japan Sea (`JS`, 130-150E, 30-60N) and the northwest Atlantic (`NA`, 75-65W, 30-45N). The ensemble has five members (`1000`, `1100`, `1200`, `1300`, `1400`). Only winter (DJF) is analysed.
+Scripts for identifying marine cold-air outbreaks (MCAOs) in a CESM2 large ensemble, tracing the air masses that feed them with Lagrangian back-trajectories, and comparing the present (1990-2000) and future (2090-2100, SSP3-7.0) climates. Two regions are analysed: the Japan-adjacent seas (`JS`, 130-150E, 30-60N) and the northwest Atlantic (`NA`, 75-65W, 30-45N). The ensemble has five members (`1000`, `1100`, `1200`, `1300`, `1400`). Only winter (DJF) is analysed.
 
 ## Layout
 
