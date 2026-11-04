@@ -59,10 +59,10 @@ Run once per ensemble member, in this order.
 
 1. `CAO_index.sh` computes the CAO index from CESM output for each region and timeframe, using CDO.
 2. `CAO_index_clim.sh` computes the six-hourly climatology and the anomalies of the index.
-3. `extract_events_CAOI_6hourly.sh` detects the events. Its final output, `summary_events_DJF90_<timeframe>_overstep_24_CAOI_<region>_filtered`, is the event list used by the trajectory branch.
-4. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (CAO index and precipitation) to files.
-5. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the event statistics and the climatology figures.
-6. `CAO_index_evolution.py` plots the evolution of the index during events.
+3. `CAO_index_evolution.py` averages the anomalies over the region box (latitude weighted), writes the index time series `CAOI_<timeframe>.csv` and plots it.
+4. `extract_events_CAOI_6hourly.sh` detects the events. Its final output, `summary_events_DJF90_<timeframe>_overstep_24_CAOI_<region>_filtered`, is the event list used by the trajectory branch.
+5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (CAO index and precipitation) to files.
+6. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the event statistics and the climatology figures.
 
 ### Branch B: trajectories (`trajectories/`, `trajectory_analysis/`)
 
