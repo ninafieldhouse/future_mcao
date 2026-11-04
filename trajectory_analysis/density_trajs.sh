@@ -12,14 +12,18 @@ airstreams=("ALL" "LL" "UL")
 
 mkdir -p "$CAO_DENSITY_DIR"
 
+# The Lagranto `density` tool only accepts bare file names (no directory part), so run
+# from the trajectory directory and move the results to the density directory afterwards.
+cd "$CAO_LAGRANTO_DIR" || exit 1
+
 for region in "${regions[@]}"; do
     echo "Processing region: $region"
     for timeframe in "${timeframes[@]}"; do
         echo "Processing timeframe: $timeframe"
         for airstream in "${airstreams[@]}"; do
-            TRAJECTORY_FILE="${CAO_LAGRANTO_DIR}/CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH.txt"
-            OUTPUT_FILE_1="${CAO_DENSITY_DIR}/density_all_CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH"
-            OUTPUT_FILE_2="${CAO_DENSITY_DIR}/density_timesteps_CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH"
+            TRAJECTORY_FILE="CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH.txt"
+            OUTPUT_FILE_1="density_all_CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH"
+            OUTPUT_FILE_2="density_timesteps_CAO_${airstream}_trajs_${region}_${timeframe}_ALL_with_dTH"
             
             echo "Processing $airstream..."
             # Define the fields to process
@@ -86,8 +90,10 @@ for region in "${regions[@]}"; do
             density ${TRAJECTORY_FILE} ${OUTPUT_FILE_2} -field TH -time -168.00
 
 
+            mv -f "$OUTPUT_FILE_1" "$OUTPUT_FILE_2" "$CAO_DENSITY_DIR/"
+
             echo "Density gridding complete!"
-            echo "Output file: $OUTPUT_FILE_1 and $OUTPUT_FILE_2"
+            echo "Output files in $CAO_DENSITY_DIR: $OUTPUT_FILE_1 and $OUTPUT_FILE_2"
             echo "Fields included: ${FIELDS[*]}"
             echo "Available at all trajectory times AND at specific times: ${SPECIFIC_TIMES[*]}"
         done
