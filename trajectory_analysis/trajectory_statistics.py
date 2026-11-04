@@ -9,7 +9,8 @@ Usage (from any directory):
 
     python trajectory_statistics.py FIGURE [FIGURE ...]
 
-where FIGURE is one of: F3, S5 (see FIGURES below). The input data are read from
+where FIGURE is one of: F3, S4, S5 (see FIGURES below). S4 also prints the numbers of the table
+in Fig. S4c, f (cooling and warming counts, shares and mean rates). The input data are read from
 $CAO_DATA_ROOT/lagranto and the figures are written to $CAO_PLOTS_ROOT/traj
 (see config/config.py).
 """
@@ -539,11 +540,231 @@ def plot_combined_evolution_rates_wbc_nonwbc_land(region, airstream, varname='TH
     plt.savefig(f"{figpath}combined_evolution_rates_{varname}_{airstream}_{region}_warmingphases.pdf", bbox_inches='tight')
     plt.show()
 
+def compare_cooling_rates_fixed_vs_ensemble(region, airstream, timeframe, time_step_start=-144, time_step_end=-138):
+    """
+    Compare cooling rates calculated two ways:
+    1. Direct: cooling rate between two specific time steps across all trajectories
+    2. Ensemble: rate derived from ensemble means at those same time steps
+    
+    Parameters:
+    -----------
+    region : str
+        'JS' or 'NA'
+    airstream : str
+        Airstream identifier (e.g., 'LL', 'UL')
+    timeframe : str
+        'present' or 'future'
+    time_step_start : float
+        Starting relative time in hours (default -144)
+    time_step_end : float
+        Ending relative time in hours (default -138)
+    """
+    
+    # Load trajectory data
+    path = f"{config.LAGRANTO_DIR}/CAO_ALL_TRAJS_{region}_{timeframe}_ALL.csv"
+    df = pd.read_csv(path)
+    
+    # Filter for specific airstream
+    df_air = df[df['airstream'] == airstream].copy()
+    
+    if df_air.empty:
+        print(f"No data for {airstream} in {region} ({timeframe})")
+        return
+    
+    # Method 1: Direct calculation from individual trajectories
+    direct_rates = []
+    
+    for traj_id, group in df_air.groupby('traj_id'):
+        group = group.sort_values('rel_time')
+        
+        # Get TH values at both time steps
+        th_start = group.loc[np.isclose(group['rel_time'], time_step_start), 'TH']
+        th_end = group.loc[np.isclose(group['rel_time'], time_step_end), 'TH']
+        
+        if not th_start.empty and not th_end.empty:
+            delta_th = th_end.values[0] - th_start.values[0]
+            delta_t = time_step_end - time_step_start  # hours
+            cooling_rate = delta_th   # K per 6 hour
+            direct_rates.append(cooling_rate)
+    
+    direct_rates = np.array(direct_rates)
+    
+    # Method 2: Calculate from ensemble means
+    rel_times, means, q25s, q75s = calculate_weighted_stats(df_air, 'TH')
+    
+    # Find ensemble values at the two time steps (interpolate if necessary)
+    th_mean_start = np.interp(time_step_start, rel_times, means)
+    th_mean_end = np.interp(time_step_end, rel_times, means)
+    delta_th_ensemble = th_mean_end - th_mean_start
+    delta_t = time_step_end - time_step_start
+    ensemble_rate = delta_th_ensemble   # K per 6 hour
+    
+    # Statistics
+    print(f"\n{'='*70}")
+    print(f"Cooling Rate Comparison: {region} - {airstream} - {timeframe}")
+    print(f"Time interval: {time_step_start}h to {time_step_end}h (Δt = {delta_t}h)")
+    print(f"{'='*70}")
+    
+    print(f"\nDirect Method (individual trajectories):")
+    print(f"  Number of trajectories with data: {len(direct_rates)}")
+    print(f"  Mean cooling rate: {direct_rates.mean():.6f} K/6h")
+    print(f"  Median cooling rate: {np.median(direct_rates):.6f} K/6h")
+    print(f"  Std dev: {direct_rates.std():.6f} K/6h")
+    print(f"  Min: {direct_rates.min():.6f} K/6h")
+    print(f"  Max: {direct_rates.max():.6f} K/6h")
+    print(f"  25th percentile: {np.percentile(direct_rates, 25):.6f} K/6h")
+    print(f"  75th percentile: {np.percentile(direct_rates, 75):.6f} K/6h")
+    
+    print(f"\nEnsemble Method (from means):")
+    print(f"  TH mean at {time_step_start}h: {th_mean_start:.4f} K")
+    print(f"  TH mean at {time_step_end}h: {th_mean_end:.4f} K")
+    print(f"  Ensemble cooling rate: {ensemble_rate:.6f} K/6h")
+    
+    print(f"\nDifference:")
+    print(f"  Direct mean - Ensemble: {direct_rates.mean() - ensemble_rate:.6f} K/6h")
+    print(f"  Relative difference: {(direct_rates.mean() - ensemble_rate)/abs(ensemble_rate)*100:.2f}%")
+    
+    # Create comparison visualization
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # Histogram of direct rates
+    axes[0].hist(direct_rates, bins=30, alpha=0.7, color='blue', edgecolor='black')
+    axes[0].axvline(direct_rates.mean(), color='red', linestyle='--', linewidth=2, label=f'Mean: {direct_rates.mean():.4f} K/6h')
+    axes[0].axvline(ensemble_rate, color='orange', linestyle='--', linewidth=2, label=f'Ensemble: {ensemble_rate:.4f} K/6h')
+    axes[0].set_xlabel('Cooling Rate [K/6h]')
+    axes[0].set_ylabel('Frequency')
+    axes[0].set_title(f'Distribution of Direct Cooling Rates\n{region} - {airstream} - {timeframe}')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+    
+    # Ensemble time series with highlighted time step
+    axes[1].plot(rel_times, means, 'b-', linewidth=2, label='Ensemble mean')
+    axes[1].fill_between(rel_times, q25s, q75s, alpha=0.2, color='blue', label='IQR')
+    
+    # Mark the two time steps
+    axes[1].plot([time_step_start, time_step_end], [th_mean_start, th_mean_end], 'ro-', 
+                linewidth=2, markersize=8, label=f'Rate interval')
+    
+    # Add slope line
+    axes[1].plot([time_step_start, time_step_end], [th_mean_start, th_mean_end], 'r--', 
+                alpha=0.5, linewidth=1)
+    
+    axes[1].set_xlabel('Relative time [h]')
+    axes[1].set_ylabel('TH [K]')
+    axes[1].set_title(f'Ensemble Mean Temperature Evolution\n{region} - {airstream} - {timeframe}')
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+    axes[1].set_xlim(-168, 0)
+    
+    plt.tight_layout()
+    plt.savefig(f"{figpath}cooling_rate_comparison_{region}_{airstream}_{timeframe}_{time_step_start}to{time_step_end}.png", 
+                dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    return {
+        'direct_rates': direct_rates,
+        'ensemble_rate': ensemble_rate,
+        'n_trajectories': len(direct_rates)
+    }
+
+def cooling_rate_distribution(region, airstream, timestep_start=-144, timestep_end=-138):
+    """
+    Plot distribution of cooling rates for given region and airstream and timestep.
+    
+    :param region: Description
+    :param airstream: Description
+    """
+    timestep_end = timestep_start + 6  # Ensure 6-hour interval
+    rates_dict = {}
+
+    for timeframe in ['present', 'future']:
+        # Load trajectory data
+        path = f"{config.LAGRANTO_DIR}/CAO_ALL_TRAJS_{region}_{timeframe}_ALL.csv"
+        df = pd.read_csv(path)
+        
+        # Filter for specific airstream
+        df_air = df[df['airstream'] == airstream].copy()
+        
+        if df_air.empty:
+            print(f"No data for {airstream} in {region} ({timeframe})")
+            return
+        
+        # Method 1: Direct calculation from individual trajectories
+        direct_rates = []
+        
+        for traj_id, group in df_air.groupby('traj_id'):
+            group = group.sort_values('rel_time')
+            
+            # Get TH values at both time steps
+            th_start = group.loc[np.isclose(group['rel_time'], timestep_start), 'TH']
+            th_end = group.loc[np.isclose(group['rel_time'], timestep_end), 'TH']
+            
+            if not th_start.empty and not th_end.empty:
+                delta_th = th_end.values[0] - th_start.values[0]
+                delta_t = timestep_end - timestep_start  # hours
+                cooling_rate = delta_th   # K per 6 hours
+                direct_rates.append(cooling_rate)
+
+        # count negative and positive rates
+        direct_rates = np.array(direct_rates)
+        n_negative = np.sum(direct_rates < 0)
+        n_positive = np.sum(direct_rates > 0)
+        n_zero = np.sum(direct_rates == 0)
+        print(f"\n{region} - {airstream} - {timeframe} Cooling Rate Distribution ({timestep_start}h to {timestep_end}h):")
+        print(f"  Total trajectories: {len(direct_rates)}")
+        print(f"  Negative rates: {n_negative} ({n_negative/len(direct_rates)*100:.2f}%)")
+        print(f"  Positive rates: {n_positive} ({n_positive/len(direct_rates)*100:.2f}%)")
+        print(f"  Zero rates: {n_zero} ({n_zero/len(direct_rates)*100:.2f}%)")
+
+        # calculate mean of negative and positive rates separately
+        mean_negative = direct_rates[direct_rates < 0].mean() if n_negative > 0 else np.nan
+        mean_positive = direct_rates[direct_rates > 0].mean() if n_positive > 0 else np.nan
+        print(f"  Mean negative rate: {mean_negative:.4f} K/6h")
+        print(f"  Mean positive rate: {mean_positive:.4f} K/6h")
+
+        rates_dict[timeframe] = np.array(direct_rates)
+    
+    # Plotting
+    plt.rcParams.update({
+        'font.size': 14,
+        'axes.titlesize': 16,
+        'axes.labelsize': 14,
+        'legend.fontsize': 12,
+        'xtick.labelsize': 12,
+        'ytick.labelsize': 12
+    })
+    fig, ax = plt.subplots(figsize=(8, 6))
+    bins = np.linspace(-12, 12, 100)
+    for timeframe, rates in rates_dict.items():
+        ax.hist(rates, bins=bins, alpha=0.5, label=f'{timeframe.capitalize()} (N={len(rates)})', edgecolor='black')
+        ax.axvline(x=rates.mean(), color='blue' if timeframe=='present' else 'orange', linestyle='--', 
+                  label=f'Mean {timeframe}: {rates.mean():.2f} K/6h')
+    ax.set_xlabel('Cooling Rate [K/6h]')
+    ax.set_ylabel('Frequency')
+    ax.set_title(f'Cooling Rate Distribution: {airstream} - {region}\n({timestep_start}h to {timestep_end}h)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(f"{figpath}cooling_rate_distribution_{region}_{airstream}_{timestep_start}to{timestep_end}.png", dpi=300, bbox_inches='tight')
+    plt.show()
+
+
+def figure_s4():
+    """Distribution of the cooling rates and evolution of TH, NA low-level air stream, present and
+    future (Fig. S4a, b, d, e). The table (Fig. S4c, f) is printed by cooling_rate_distribution.
+    The figures use the default matplotlib font sizes."""
+    plt.rcParams.update(matplotlib.rcParamsDefault)
+    plt.rcParams["font.sans-serif"] = "Arial"
+    for timeframe in timeframes:
+        compare_cooling_rates_fixed_vs_ensemble("NA", "LL", timeframe, -96, -90)
+    cooling_rate_distribution("NA", "LL", -96, -90)
+
 
 # Figure name -> function that produces it
 FIGURES = {
     # Evolution of TH and cooling/warming rates of the low-level air stream, Japan Sea and northwest Atlantic
     "F3": lambda: [plot_combined_evolution_rates_cooling_warming(region, "LL") for region in ("JS", "NA")],
+    "S4": figure_s4,
     # Warming rates split into WBC, non-WBC and land (three panels), northwest Atlantic
     "S5": lambda: plot_combined_evolution_rates_wbc_nonwbc_land("NA", "LL"),
 }
@@ -556,7 +777,8 @@ def main():
     os.makedirs(figpath, exist_ok=True)
     for name in args.figures:
         print(f"Producing {name}")
-        FIGURES[name]()
+        with plt.rc_context():  # the plot settings of one figure must not affect the next
+            FIGURES[name]()
 
 
 if __name__ == "__main__":
