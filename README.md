@@ -62,7 +62,7 @@ Run once per ensemble member, in this order.
 3. `CAO_index_evolution.py` averages the anomalies over the region box (latitude weighted), writes the index time series `CAOI_<timeframe>.csv` and plots it.
 4. `extract_events_CAOI_6hourly.sh` detects the events. Its final output, `summary_events_DJF90_<timeframe>_overstep_24_CAOI_<region>_filtered`, is the event list used by the trajectory branch.
 5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (CAO index and precipitation) to files.
-6. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the event statistics and the climatology figures.
+6. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the ensemble figures (see [Paper figures](#paper-figures)).
 
 ### Branch B: trajectories (`trajectories/`, `trajectory_analysis/`)
 
@@ -81,9 +81,28 @@ Run `trajectories/` steps per ensemble member, except where noted.
 Then, in `trajectory_analysis/`:
 
 - `density_trajs.sh` computes trajectory densities on a grid with Lagranto `density`. The Lagranto `density` tool only accepts file names without a directory part, so the script runs inside `$CAO_LAGRANTO_DIR` and then moves the results to `$CAO_DENSITY_DIR`.
-- `plot_density.py` plots the densities and the present-future differences.
+- `plot_density.py` plots the 24-hourly potential temperature change of the low-level air stream and its present-future difference (see [Paper figures](#paper-figures)).
 - `plot_trajectories.py` plots trajectories by air stream and the air-stream fractions.
-- `trajectory_statistics.py` and `trajectory_statistics_writesummary.py` compute the weighted statistics and significance tests (t-test, Mann-Whitney U) and plot the warming along trajectories.
+- `trajectory_statistics_writesummary.py` writes a summary file per region and timeframe (`TH_summary_<region>_<timeframe>.csv`) that `trajectory_statistics.py` reads.
+- `trajectory_statistics.py` plots the evolution of the potential temperature along the trajectories and the distribution of the cooling and warming rates, with significance tests (see [Paper figures](#paper-figures)).
+
+## Paper figures
+
+The figure scripts read the data from `$CAO_DATA_ROOT` and write the figures to `$CAO_PLOTS_ROOT`. Each takes the names of the figures to produce. The scripts produce the individual panels, not the assembled figures with captions.
+
+| Figure | Content | Command |
+|---|---|---|
+| Fig. 1 | Future-present difference of CAO intensity (a, b), frequency (c, d) and evaporation (e, f); JS in a, c, e and NA in b, d, f | `python climatology/CAO_index_statistics_clean_mulitimember.py F1` |
+| Fig. S1 | Present and future panels of the same variables, JS | `python climatology/CAO_index_statistics_clean_mulitimember.py S1` |
+| Fig. S2 | As S1, NA | `python climatology/CAO_index_statistics_clean_mulitimember.py S2` |
+| Fig. 2 | Contribution of the CAO index components, JS (a) and NA (b) | `python climatology/CAO_index_statistics_clean_mulitimember.py F2` |
+| Fig. S3 | As Fig. 2a with the northern boundary of the JS box at 50N | `python climatology/CAO_index_statistics_clean_mulitimember.py S3` |
+| Fig. 3 | Evolution of the potential temperature and cooling and warming rates, low-level air stream, JS (a-c) and NA (d-f) | `python trajectory_analysis/trajectory_statistics.py F3` |
+| Fig. S4 | Distribution of the cooling rates (a, d) and TH evolution (b, e), NA low-level air stream, present and future. The table (c, f) is printed to the terminal | `python trajectory_analysis/trajectory_statistics.py S4` |
+| Fig. S5 | Warming rates split into WBC, non-WBC and land, NA | `python trajectory_analysis/trajectory_statistics.py S5` |
+| Fig. 4 | Density maps of the 24-hourly potential temperature change, low-level air stream: present and future (a, b, d, e) and difference (c, f) | `python trajectory_analysis/plot_density.py F4_maps F4_diff` |
+
+The panels of Figs. 1, S1 and S2 come from the same calls, so `F1` writes the files of all three. Each command writes the panels of its figure to the plot directory and loads the data of all five ensemble members, which takes some time and memory.
 
 ## Notes
 
