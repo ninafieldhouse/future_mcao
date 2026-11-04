@@ -15,7 +15,7 @@ Scripts for identifying marine cold-air outbreaks (CAOs) in a CESM2 large ensemb
 
 - CESM2 output on the CESM archive (CAM `h3` and CICE `h1` history files)
 - [CDO](https://code.mpimet.mpg.de/projects/cdo)
-- LAGRANTO with the CESM interface (`caltra`, `density`), loaded through the `dyn_tools` module
+- LAGRANTO with the CESM interface (`caltra`, `density`)
 - Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba, `dypy` and the `lagranto` Python package. The figure scripts need a recent environment: they were run with Python 3.13, matplotlib 3.10, numpy 2.3, xarray 2025.10, cartopy 0.25 and cmcrameri 1.8 (matplotlib 3.5 or newer is required for `layout='constrained'`). The figure scripts do not need `lagranto` or `dypy`.
 
 ## Configuration
@@ -32,24 +32,6 @@ Machine-specific paths are set in `config/config.sh` (for shell scripts) and `co
 Scientific parameters (members, regions, timeframes, thresholds, region boxes) are written as literals in each script and are not part of the configuration.
 
 Most scripts take the ensemble member as their first argument, for example `bash climatology/CAO_index.sh 1000`.
-
-## Method summary
-
-**CAO index.** The index is the difference between the potential temperature of the sea surface (SST referenced to surface pressure) and of the air at about 850 hPa: `CAOI = SSTH - TH_850`. Grid points with sea ice or land are masked out. A grid point is counted as a CAO point where `CAOI > 8 K`.
-
-**Events.** Six-hourly CAO index values in DJF are ranked and those above the 90th percentile are kept. Consecutive time steps, and time steps separated by gaps of up to 24 h, are merged into one event, starting with the most intense. Only events lasting longer than 24 h are kept.
-
-**Trajectories.** For each event, 7-day (168 h) backward trajectories are started from all CAO grid points in the region, from the surface up to an assumed boundary-layer top of 850 hPa. Potential temperature (`TH`), its tendency (`dTH`, `dTH_24`) and other fields are traced along each trajectory.
-
-**Air streams.** Trajectories are classified as follows.
-
-| Name | Definition |
-|---|---|
-| `LL` | Low-level: pressure above 700 hPa at all 29 time steps |
-| `UL` | All other trajectories |
-| `BCAR` | `LL` trajectories with `TH < 280 K` over land (or over sea ice in a box over the northwest Atlantic) for more than 12 consecutive time steps, and sea-level pressure above 1020 hPa at least once |
-| `nonBCAR` | `LL` trajectories that are not `BCAR` |
-| `DI` | Trajectories with a pressure change of more than 400 hPa relative to their start within the first 12 time steps |
 
 ## Workflow
 
@@ -88,21 +70,19 @@ Then, in `trajectory_analysis/`:
 
 ## Paper figures
 
-The figure scripts read the data from `$CAO_DATA_ROOT` and write the figures to `$CAO_PLOTS_ROOT`. Each takes the names of the figures to produce. The scripts produce the individual panels, not the assembled figures with captions.
+The figure scripts read the data from `$CAO_DATA_ROOT` and write the figures to `$CAO_PLOTS_ROOT`.
 
-| Figure | Content | Command |
-|---|---|---|
-| Fig. 1 | Future-present difference of CAO intensity (a, b), frequency (c, d) and evaporation (e, f); JS in a, c, e and NA in b, d, f | `python climatology/CAO_index_statistics_clean_mulitimember.py F1` |
-| Fig. S1 | Present and future panels of the same variables, JS | `python climatology/CAO_index_statistics_clean_mulitimember.py S1` |
-| Fig. S2 | As S1, NA | `python climatology/CAO_index_statistics_clean_mulitimember.py S2` |
-| Fig. 2 | Contribution of the CAO index components, JS (a) and NA (b) | `python climatology/CAO_index_statistics_clean_mulitimember.py F2` |
-| Fig. S3 | As Fig. 2a with the northern boundary of the JS box at 50N | `python climatology/CAO_index_statistics_clean_mulitimember.py S3` |
-| Fig. 3 | Evolution of the potential temperature and cooling and warming rates, low-level air stream, JS (a-c) and NA (d-f) | `python trajectory_analysis/trajectory_statistics.py F3` |
-| Fig. S4 | Distribution of the cooling rates (a, d) and TH evolution (b, e), NA low-level air stream, present and future. The table (c, f) is printed to the terminal | `python trajectory_analysis/trajectory_statistics.py S4` |
-| Fig. S5 | Warming rates split into WBC, non-WBC and land, NA | `python trajectory_analysis/trajectory_statistics.py S5` |
-| Fig. 4 | Density maps of the 24-hourly potential temperature change, low-level air stream: present and future (a, b, d, e) and difference (c, f) | `python trajectory_analysis/plot_density.py F4_maps F4_diff` |
-
-The panels of Figs. 1, S1 and S2 come from the same calls, so `F1` writes the files of all three. Each command writes the panels of its figure to the plot directory and loads the data of all five ensemble members, which takes some time and memory.
+| Figure | Command |
+|---|---|
+| Fig. 1 | `python climatology/CAO_index_statistics_clean_mulitimember.py F1` |
+| Fig. S1 | `python climatology/CAO_index_statistics_clean_mulitimember.py S1` |
+| Fig. S2 | `python climatology/CAO_index_statistics_clean_mulitimember.py S2` |
+| Fig. 2 | `python climatology/CAO_index_statistics_clean_mulitimember.py F2` |
+| Fig. S3 | `python climatology/CAO_index_statistics_clean_mulitimember.py S3` |
+| Fig. 3 | `python trajectory_analysis/trajectory_statistics.py F3` |
+| Fig. S4 | `python trajectory_analysis/trajectory_statistics.py S4` |
+| Fig. S5 | `python trajectory_analysis/trajectory_statistics.py S5` |
+| Fig. 4 | `python trajectory_analysis/plot_density.py F4_maps F4_diff` |
 
 ## Notes
 
