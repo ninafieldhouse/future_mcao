@@ -482,12 +482,6 @@ for region in regions:
 
 # # ax.clabel(k, fontsize = 10) #replaced m with k
 
-# # Save the figure
-# fig_path = '/home/nfieldhouse/ma/plots/'
-# fig.savefig(f'{fig_path}traj/{airstream}_{plotvar}_{region}_{timeframe}.png', bbox_inches = "tight")
-# plt.show()
-# # plt.close(fig)
-
 # %%
 # -------------------------------
 # plot SST trajectories over sea ice

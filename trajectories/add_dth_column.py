@@ -174,31 +174,5 @@ def process_all_files():
 
 # Example usage
 if __name__ == "__main__":
-    # # Test on one file first
-    # test_input = "/net/litho/atmosdyn2/nfieldhouse/data/lagranto/CAO_ALL_trajs_JS_present_ALL.txt.fixed"
-    # test_output = "/net/litho/atmosdyn2/nfieldhouse/data/lagranto/CAO_ALL_trajs_JS_present_ALL_with_dTH_test.txt"
-    
-    # print("Testing on one file...")
-    # print(f"Input: {test_input}")
-    # print(f"Output: {test_output}")
-    
-    # try:
-    #     add_dth_column(test_input, test_output)
-        
-    #     # Show sample output
-    #     print("\nFirst 20 lines of output:")
-    #     with open(test_output, 'r') as f:
-    #         for i, line in enumerate(f):
-    #             if i < 20:
-    #                 print(line.rstrip())
-    #             else:
-    #                 break
-                    
-    # except FileNotFoundError:
-    #     print(f"Test file not found: {test_input}")
-    # except Exception as e:
-    #     print(f"Error: {e}")
-
-
     # Process all files
     process_all_files()
