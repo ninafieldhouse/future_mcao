@@ -7,7 +7,7 @@ Scripts for identifying marine cold-air outbreaks (MCAOs) in a CESM2 large ensem
 | Directory | Purpose |
 |---|---|
 | `config/` | Machine-specific paths (`config.sh`, `config.py`) |
-| `climatology/` | CAO index, event detection, event statistics and figures |
+| `climatology/` | MCAO index, event detection, event statistics and figures |
 | `trajectories/` | Trajectory start points, Lagranto runs, trajectory post-processing |
 | `trajectory_analysis/` | Trajectory density, plots and statistics |
 
@@ -35,22 +35,22 @@ Most scripts take the ensemble member as their first argument, for example `bash
 
 ## Workflow
 
-### Branch A: CAO climatology and statistics (`climatology/`)
+### Branch A: MCAO climatology and statistics (`climatology/`)
 
 Run once per ensemble member, in this order.
 
-1. `CAO_index.sh` computes the CAO index from CESM output for each region and timeframe, using CDO.
+1. `CAO_index.sh` computes the MCAO index from CESM output for each region and timeframe, using CDO.
 2. `CAO_index_clim.sh` computes the six-hourly climatology and the anomalies of the index.
 3. `CAO_index_evolution.py` averages the anomalies over the region box (latitude weighted), writes the index time series `CAOI_<timeframe>.csv` and plots it.
 4. `extract_events_CAOI_6hourly.sh` detects the events. Its final output, `summary_events_DJF90_<timeframe>_overstep_24_CAOI_<region>_filtered`, is the event list used by the trajectory branch.
-5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (CAO index and precipitation) to files.
+5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (MCAO index and precipitation) to files.
 6. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the ensemble figures (see [Paper figures](#paper-figures)).
 
 ### Branch B: trajectories (`trajectories/`, `trajectory_analysis/`)
 
 Run `trajectories/` steps per ensemble member, except where noted.
 
-1. `CAO_masks_edit.sh` calls `CAO_masks_2.py` for every event. It writes the CAO mask and the Lagranto start file for the event date.
+1. `CAO_masks_edit.sh` calls `CAO_masks_2.py` for every event. It writes the MCAO mask and the Lagranto start file for the event date.
 2. `calculate_trajs.sh` runs the four `loop_through_events_<region>_<timeframe>.sh` scripts in parallel. Each loops over all events and calls the matching `backward_forward_trajectories_cao_<region>_<timeframe>.sh`, which runs Lagranto `caltra`.
    `backward_forward_trajectories_cao_singleevent.sh` runs one event only.
 3. `find_missing_trajs.sh` lists events that have no trajectory file, so that they can be rerun.
