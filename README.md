@@ -7,7 +7,7 @@ Scripts for identifying marine cold-air outbreaks (MCAOs) in a CESM2 large ensem
 | Directory | Purpose |
 |---|---|
 | `config/` | Machine-specific paths (`config.sh`, `config.py`) |
-| `climatology/` | MCAO index, event detection, event statistics and figures |
+| `climatology/` | Cold air outbreak index (CAOI), event detection, event statistics and figures |
 | `trajectories/` | Trajectory start points, Lagranto runs, trajectory post-processing |
 | `trajectory_analysis/` | Trajectory density, plots and statistics |
 
@@ -39,11 +39,11 @@ Most scripts take the ensemble member as their first argument, for example `bash
 
 Run once per ensemble member, in this order.
 
-1. `CAO_index.sh` computes the MCAO index from CESM output for each region and timeframe, using CDO.
-2. `CAO_index_clim.sh` computes the six-hourly climatology and the anomalies of the index.
-3. `CAO_index_evolution.py` averages the anomalies over the region box (latitude weighted), writes the index time series `CAOI_<timeframe>.csv` and plots it.
+1. `CAO_index.sh` computes the CAOI from CESM output for each region and timeframe, using CDO.
+2. `CAO_index_clim.sh` computes the six-hourly climatology and the anomalies of the CAOI.
+3. `CAO_index_evolution.py` averages the anomalies over the region box (latitude weighted), writes the CAOI time series `CAOI_<timeframe>.csv` and plots it.
 4. `extract_events_CAOI_6hourly.sh` detects the events. Its final output, `summary_events_DJF90_<timeframe>_overstep_24_CAOI_<region>_filtered`, is the event list used by the trajectory branch.
-5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (MCAO index and precipitation) to files.
+5. `CAO_index_statistics_clean_write_data.py` and `CAO_index_statistics_clean_write_precip_data.py` write the event-based fields (CAOI and precipitation) to files.
 6. `CAO_index_statistics_clean_mulitimember.py` combines the five members and produces the ensemble figures (see [Paper figures](#paper-figures)).
 
 ### Branch B: trajectories (`trajectories/`, `trajectory_analysis/`)
