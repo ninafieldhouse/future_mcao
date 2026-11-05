@@ -1,11 +1,10 @@
 #!/bin/bash
 source "$(dirname "$0")/../config/config.sh"
 
-module load dyn_tools
 
 MODEL=cesm; export MODEL
 NETCDF_FORMAT=CF; export NETCDF_FORMAT
-LAGRANTO=${DYN_TOOLS}/lagranto.cesm; export LAGRANTO
+cao_setup_lagranto || exit 1
 
 member_id=$1
 timeframe=$2  # present or future

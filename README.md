@@ -17,19 +17,41 @@ Scripts for identifying marine cold-air outbreaks (MCAOs) in a CESM2 large ensem
 
 - [CESM2](https://www.cesm.ucar.edu/models/cesm2/download) output on the CESM archive (CAM `h3` and CICE `h1` history files)
 - [CDO](https://code.mpimet.mpg.de/projects/cdo)
-- [LAGRANTO](https://iacweb.ethz.ch/staff/sprenger/lagranto/) with the CESM interface (`caltra`, `density`)
+- [LAGRANTO](https://iacweb.ethz.ch/staff/sprenger/lagranto/) with the CESM interface (`caltra`, `density`, `newtime`)
 - Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba and the `lagranto` Python package. The figure scripts need a recent environment: they were run with Python 3.13, matplotlib 3.10, numpy 2.3, xarray 2025.10, cartopy 0.25 and cmcrameri 1.8 (matplotlib 3.5 or newer is required for `layout='constrained'`). The figure scripts do not need `lagranto`.
 
 ## Configuration
 
-Machine-specific paths are set in `config/config.sh` (for shell scripts) and `config/config.py` (for Python scripts). Each can be overridden by exporting the variable before running a script.
+Machine-specific paths are read from environment variables. There are no default paths, and a script stops with an error message if a variable is missing. Set them in your shell (or in `~/.bashrc`) before running any script:
+
+```bash
+export CAO_DATA_ROOT=/path/to/derived/data
+export CAO_PLOTS_ROOT=/path/to/figures
+export CAO_CESM_ARCHIVE=/path/to/cesm2/output
+export CAO_RUN_DIR=/path/to/scratch
+export CAO_LAGRANTO_HOME=/path/to/lagranto.cesm   # only for the trajectory steps that call LAGRANTO
+```
 
 | Variable | Meaning |
 |---|---|
-| `CAO_DATA_ROOT` | Root of all derived data (per-member subdirectories `<member_id>/...`) |
-| `CAO_CESM_ARCHIVE` | CESM2 archive containing the raw model output |
-| `CAO_RUN_DIR` | Scratch directory for CDO and Lagranto runs |
+| `CAO_DATA_ROOT` | Directory where all data derived from the CESM2 output is written and read (event lists, CAOI fields, trajectories, densities), see below |
 | `CAO_PLOTS_ROOT` | Output directory for figures |
+| `CAO_CESM_ARCHIVE` | CESM2 archive containing the raw model output |
+| `CAO_RUN_DIR` | Scratch directory for CDO and LAGRANTO runs |
+| `CAO_LAGRANTO_HOME` | Installation directory of LAGRANTO.CESM. Its tools `caltra`, `density` and `newtime` must be on the `PATH` (`$CAO_LAGRANTO_HOME/bin` is added automatically if it exists) |
+
+The paths are loaded by `config/config.sh` (shell scripts) and `config/config.py` (Python scripts). The first four variables are required by every script. `CAO_LAGRANTO_HOME` is required only by the scripts that call LAGRANTO.
+
+Contents of `$CAO_DATA_ROOT`:
+
+```
+$CAO_DATA_ROOT/
+├── <member_id>/cao/clim/<region>/    CAOI, flux, precipitation and ice fields (Figs. 1, 2, S1-S3)
+├── <member_id>/cao/events_d/         event lists
+├── <member_id>/lagranto/             per-member trajectories and start files
+└── lagranto/                         files combined over all members (CSV trajectories, TH summaries)
+    └── density/                      gridded trajectory densities (Fig. 4)
+```
 
 Scientific parameters (members, regions, timeframes, thresholds, region boxes) are written as literals in each script and are not part of the configuration.
 

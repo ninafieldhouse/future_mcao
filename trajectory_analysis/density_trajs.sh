@@ -1,7 +1,7 @@
 #!/bin/bash
 source "$(dirname "$0")/../config/config.sh"
 
-module load dyn_tools
+cao_setup_lagranto || exit 1
 
 regions=("JS" "NA")
 # regions=("JS")
