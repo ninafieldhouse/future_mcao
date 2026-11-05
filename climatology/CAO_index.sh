@@ -4,8 +4,6 @@ source "$(dirname "$0")/../config/config.sh"
 
 cd "$CAO_RUN_DIR/cesm"  # temp run directory
 
-module load dyn_tools  # load tools
-
 # Base output directory
 member_id=$1  # Get from command line
 output_base="${CAO_DATA_ROOT}/${member_id}/cao/clim"

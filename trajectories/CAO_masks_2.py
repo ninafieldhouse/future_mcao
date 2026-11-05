@@ -5,7 +5,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import pandas as pd
 import netCDF4 as nc
-from dypy.small_tools import interpolate
 from geopy.distance import great_circle
 import metpy.calc as mpcalc
 from metpy.units import units

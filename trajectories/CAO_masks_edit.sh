@@ -1,9 +1,6 @@
 #!/bin/bash
 source "$(dirname "$0")/../config/config.sh"
 
-module unload dyn_tools
-module load dyn_tools
-
 cd "$CAO_RUN_DIR/"          # change to your directory
 
 # Define regions and timeframes

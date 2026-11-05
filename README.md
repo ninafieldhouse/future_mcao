@@ -18,7 +18,7 @@ Scripts for identifying marine cold-air outbreaks (MCAOs) in a CESM2 large ensem
 - [CESM2](https://www.cesm.ucar.edu/models/cesm2/download) output on the CESM archive (CAM `h3` and CICE `h1` history files)
 - [CDO](https://code.mpimet.mpg.de/projects/cdo)
 - [LAGRANTO](https://iacweb.ethz.ch/staff/sprenger/lagranto/) with the CESM interface (`caltra`, `density`)
-- Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba, `dypy` and the `lagranto` Python package. The figure scripts need a recent environment: they were run with Python 3.13, matplotlib 3.10, numpy 2.3, xarray 2025.10, cartopy 0.25 and cmcrameri 1.8 (matplotlib 3.5 or newer is required for `layout='constrained'`). The figure scripts do not need `lagranto` or `dypy`.
+- Python 3 with numpy, pandas, xarray, netCDF4, scipy, matplotlib, cartopy, cmcrameri, metpy, geopy, numba and the `lagranto` Python package. The figure scripts need a recent environment: they were run with Python 3.13, matplotlib 3.10, numpy 2.3, xarray 2025.10, cartopy 0.25 and cmcrameri 1.8 (matplotlib 3.5 or newer is required for `layout='constrained'`). The figure scripts do not need `lagranto`.
 
 ## Configuration
 
